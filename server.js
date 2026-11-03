@@ -1,5 +1,5 @@
 'use strict';
-// TINY KINGDOMS v0.2 — zero-dependency Node WebSocket game server.
+// TINY KINGDOMS v0.4 — zero-dependency Node WebSocket game server.
 // Prototype for 2 trusted players; deploy behind HTTPS/WSS for internet play.
 const http = require('http');
 const fs = require('fs');
@@ -320,6 +320,86 @@ function snapshot(game,side){
     sources,objectives:owners,log:game.log.slice(0,6),caps:{units:16,squads:2,outposts:3},
     buildingRules:BUILDINGS,upgradeRules:UPGRADES,troopRules:TROOPS};
 }
+// The planner sees only the red player's snapshot. All commands go through action().
+const BOT_SIDE = 1;
+const BOT_GOALS = [{x:24,y:16,index:1},{x:24,y:7,index:0},{x:24,y:25,index:2}];
+function botBuild(view,type,attempt){
+  const own=view.buildings.filter(b=>b.side===BOT_SIDE&&b.hp>0);
+  const anchors=own.filter(b=>b.linked&&b.buildLeft<=0&&['castle','outpost'].includes(b.type));
+  const siteType={lumber:'forest',mine:'ore'}[type];
+  const sites=view.sites.filter(s=>s.type===siteType&&!s.spent&&s.stock>0&&!own.some(b=>b.site===s.id));
+  const known=view.buildings.filter(b=>!b.ghost&&b.hp>0);
+  const candidates=[];
+  for(const anchor of anchors){
+    const radius=circle(anchor)-.3;
+    for(let dx=-Math.floor(radius);dx<=radius;dx++){
+      for(let dy=-Math.floor(radius);dy<=radius;dy++){
+        const point={x:round(anchor.x+dx),y:round(anchor.y+dy)};
+        if(!within(point.x,point.y)||distance(anchor,point)>radius)continue;
+        if(view.rocks.some(r=>distance(r,point)<r.r+.7)||
+          known.some(b=>distance(b,point)<1.58||(b.side!==BOT_SIDE&&b.buildLeft<=0&&
+            ['castle','outpost'].includes(b.type)&&distance(b,point)<circle(b)))||
+          view.sites.some(s=>!s.spent&&distance(s,point)<1.3)||
+          view.units.some(u=>u.side!==BOT_SIDE&&distance(u,point)<2.7))continue;
+        const score=siteType?Math.min(...sites.map(s=>distance(s,point))):distance(point,{x:39,y:16});
+        if(!siteType||score<=5.4)candidates.push({...point,score});
+      }
+    }
+  }
+  candidates.sort((a,b)=>a.score-b.score);
+  const point=candidates[attempt%candidates.length];
+  return point&&{kind:'build',type,x:point.x,y:point.y};
+}
+function playBot(game,bot){
+  if(game.ended||game.time<bot.next)return;
+  bot.next=game.time+2;
+  const view=snapshot(game,BOT_SIDE);
+  const own=view.buildings.filter(b=>b.side===BOT_SIDE&&b.hp>0);
+  const units=view.units.filter(u=>u.side===BOT_SIDE);
+  const home=BASE_POS[BOT_SIDE];
+  const issue=(command,description)=>{
+    if(!command||!action(game,BOT_SIDE,command).ok)return;
+    bot.log.unshift({msg:'BOT｜'+description,at:round(game.time)});
+    if(bot.log.length>20)bot.log.pop();
+  };
+  for(const type of ['lumber','mine','barracks']){
+    const cost=BUILDINGS[type];
+    if(own.some(b=>b.type===type)||view.wood<cost.wood||view.iron<cost.iron)continue;
+    const attempt=bot.attempts[type]||0;
+    bot.attempts[type]=attempt+1;
+    issue(botBuild(view,type,attempt),cost.name+'を建設');
+    break;
+  }
+  const barracks=own.find(b=>b.type==='barracks'&&b.buildLeft<=0&&b.linked);
+  if(barracks&&barracks.queue.length+(barracks.working?1:0)<2){
+    const count=squad=>units.filter(u=>u.squad===squad).length+
+      barracks.queue.filter(q=>q.squad===squad).length+(barracks.working?.squad===squad?1:0);
+    const squad=count(0)<=count(1)?0:1;
+    const type=(count(squad)%2===0?['shield','scout','archer']:['archer','scout','shield'])
+      .find(name=>view.wood>=TROOPS[name].wood&&view.iron>=TROOPS[name].iron);
+    if(type&&count(squad)<8)issue({kind:'recruit',id:barracks.id,type,squad},TROOPS[type].name+'を生産予約');
+  }
+  const threat=view.units.some(u=>u.side!==BOT_SIDE&&distance(u,home)<10);
+  for(let squad=0;squad<2;squad++){
+    const size=units.filter(u=>u.squad===squad).length;
+    if(!size)continue;
+    let target=home,mode='defend',description='本拠地を防衛';
+    if(!threat){
+      const goal=BOT_GOALS.find(point=>view.objectives[point.index].owner!==BOT_SIDE);
+      if(squad===0&&size>=5&&(!goal||game.time>=120)){
+        target=BASE_POS[0];mode='march';description='敵本拠地へ進軍';
+      }else if((squad===1&&game.time>=10)||(squad===0&&size>=3)){
+        target=goal||BOT_GOALS[0];mode=goal?'march':'defend';
+        description=goal?'中央地点へ進軍・占領':'中央地点を防衛';
+      }
+    }
+    const current=view.orders[squad];
+    if(current.mode!==mode||distance(current,target)>.1){
+      issue({kind:'order',squad,mode,x:target.x,y:target.y},'第'+(squad+1)+'部隊が'+description);
+    }
+  }
+}
+
 // --- Minimal RFC 6455 implementation; frames sent by browsers are masked. ---
 function writeFrame(socket,opcode,data=Buffer.alloc(0)){
   if(socket.destroyed)return;
@@ -351,19 +431,34 @@ function decodeFrames(conn,chunk){
   }
 }
 function roomCode(){let c;do{c=(Math.floor(100000+Math.random()*900000)).toString();}while(rooms.has(c));return c;}
+function sendState(room,side){
+  const state=snapshot(room.game,side);
+  if(room.bot)state.dev={paused:room.paused,speed:room.speed,log:room.bot.log};
+  wsSend(room.slots[side]?.conn,state);
+}
+function broadcastState(room){
+  room.slots.forEach((slot,side)=>{if(slot?.conn?.alive)sendState(room,side);});
+}
+function resetDevGame(room){
+  room.game=newGame(crypto.randomBytes(4).readUInt32BE());
+  room.bot={next:0,attempts:{},log:[]};
+  room.paused=false;
+  room.speed=1;
+}
 function assignConnection(conn,room,side){
   const slot=room.slots[side];if(slot.conn&&slot.conn!==conn){wsSend(slot.conn,{kind:'error',message:'別の端末から再接続されました'});slot.conn.socket.end();}
   conn.room=room.code;conn.side=side;slot.conn=conn;slot.lastSeen=now();
-  wsSend(conn,{kind:'joined',code:room.code,side,token:slot.token,ready:room.started});
-  if(room.started){wsSend(conn,snapshot(room.game,side));wsSend(room.slots[1-side]?.conn,{kind:'peer',connected:true});}
+  wsSend(conn,{kind:'joined',code:room.code,side,token:slot.token,ready:room.started,...(room.bot?{dev:true}:{})});
+  if(room.started){sendState(room,side);wsSend(room.slots[1-side]?.conn,{kind:'peer',connected:true});}
 }
 function message(conn,m){
   if(!m||typeof m.kind!=='string')return;
-  if(m.kind==='create'){
+  if(m.kind==='create'||m.kind==='createDev'){
     if(conn.room)return wsSend(conn,{kind:'error',message:'すでに参加しています'});
     if(rooms.size>=50)return wsSend(conn,{kind:'error',message:'現在、新しい部屋を作れません。少し後でお試しください'});
     const code=roomCode(),token=crypto.randomBytes(18).toString('hex');
     const room={code,slots:[{token,conn:null,lastSeen:now()},null],started:false,game:null,created:now()};
+    if(m.kind==='createDev'){room.started=true;resetDevGame(room);}
     rooms.set(code,room);assignConnection(conn,room,0);return;
   }
   if(m.kind==='join'){
@@ -379,13 +474,21 @@ function message(conn,m){
   }
   const room=rooms.get(conn.room);if(!room||conn.side===undefined||room.slots[conn.side]?.conn!==conn)return;
   room.slots[conn.side].lastSeen=now();
+  if(m.kind==='dev'&&room.bot&&conn.side===0){
+    if(m.command==='pause'&&typeof m.paused==='boolean')room.paused=m.paused;
+    else if(m.command==='speed'&&[1,3].includes(m.speed))room.speed=m.speed;
+    else if(m.command==='rematch'&&now()-(room.lastRematch||0)>=1000){
+      room.lastRematch=now();resetDevGame(room);wsSend(conn,{kind:'devReset'});
+    }else return;
+    return sendState(room,0);
+  }
   if(m.kind==='action'&&room.started){
     const timestamp=now();
     conn.actionWindow=conn.actionWindow||{at:timestamp,count:0};
     if(timestamp-conn.actionWindow.at>=1000)conn.actionWindow={at:timestamp,count:0};
     if(++conn.actionWindow.count>12)return wsSend(conn,{kind:'error',message:'操作が速すぎます'});
-    const result=action(room.game,conn.side,m.action);
-    wsSend(conn,{kind:'result',...result});if(result.ok){for(let side=0;side<2;side++)wsSend(room.slots[side]?.conn,snapshot(room.game,side));}
+    const result=room.paused?{error:'一時停止中です。再開してから操作してください'}:action(room.game,conn.side,m.action);
+    wsSend(conn,{kind:'result',...result});if(result.ok)broadcastState(room);
   }
 }
 // Keep the static entrypoint at repo root: iPhone users can upload four files
@@ -397,7 +500,7 @@ const server=http.createServer((req,res)=>{
   try{url=new URL(req.url||'/', 'http://localhost');}catch{res.writeHead(400).end();return;}
   if(url.pathname==='/healthz'){
     res.writeHead(200,{'Content-Type':'application/json; charset=utf-8','Cache-Control':'no-store'});
-    res.end(req.method==='HEAD'?'':JSON.stringify({ok:true,service:'tiny-kingdoms',version:'0.2.0'}));
+    res.end(req.method==='HEAD'?'':JSON.stringify({ok:true,service:'tiny-kingdoms',version:'0.4.0'}));
     return;
   }
   if(!['/','/index.html'].includes(url.pathname)){res.writeHead(404).end('Not found');return;}
@@ -431,9 +534,17 @@ setInterval(()=>{
   for(const room of rooms.values()){
     if(!room.started)continue;
     // Pause if a player is disconnected: prevents losing a match because of a network interruption.
-    if(!room.slots.every(s=>s?.conn?.alive))continue;
-    update(room.game,dt);
-    if(room.game.frame%2===0||room.game.ended){for(let side=0;side<2;side++)wsSend(room.slots[side].conn,snapshot(room.game,side));}
+    if(room.bot){
+      if(!room.slots[0].conn?.alive||room.paused||room.game.ended)continue;
+      for(let step=0;step<room.speed&&!room.game.ended;step++){
+        playBot(room.game,room.bot);
+        update(room.game,dt);
+      }
+    }else{
+      if(!room.slots.every(s=>s?.conn?.alive))continue;
+      update(room.game,dt);
+    }
+    if(room.game.frame%2===0||room.game.ended)broadcastState(room);
   }
 },100);
 setInterval(()=>{const t=now();for(const [code,room] of rooms){

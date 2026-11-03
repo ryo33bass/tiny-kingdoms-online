@@ -2,7 +2,7 @@
 <html lang="ja">
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover,user-scalable=no">
-<meta name="theme-color" content="#112621"><title>TINY KINGDOMS — v0.3</title>
+<meta name="theme-color" content="#112621"><title>TINY KINGDOMS — v0.4</title>
 <style>
 :root{color-scheme:dark;--bg:#10251f;--panel:#122920ed;--border:#61847766;--mint:#bff3d1;--green:#8de0a9;--gold:#f8cd87;--ink:#e8f6e9;--muted:#9cbbac;--danger:#f18d7b}
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}html,body{width:100%;height:100%;margin:0;overflow:hidden;font-family:-apple-system,BlinkMacSystemFont,'Hiragino Kaku Gothic ProN','Noto Sans JP',sans-serif;background:var(--bg);color:var(--ink)}button,input{font:inherit}button{border:0;color:inherit;cursor:pointer;touch-action:manipulation}button:disabled{opacity:.4;cursor:default}
@@ -23,7 +23,7 @@
 @media(max-width:390px){.tool{min-width:60px}.tool .name{font-size:9px}.resource{min-width:75px;padding:6px 7px}.resource strong{font-size:14px}.squad{padding:9px 6px;min-width:66px}.cmd{padding:9px 6px}#toptools{top:calc(env(safe-area-inset-top) + 99px)}}
 @media(min-width:600px){#bottom{bottom:12px;border-radius:14px}#topbar{padding-left:25px;padding-right:25px}.tool{max-width:none}}
 
-/* v0.3: clear victory / building-placement guidance */
+/* v0.4: clear victory / building-placement guidance */
 #goalStrip{margin-top:5px;font-size:10px;font-weight:700;color:#daf4c7;letter-spacing:.05px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 #toptools{top:calc(env(safe-area-inset-top) + 119px)}
 #message{top:calc(env(safe-area-inset-top) + 144px)}
@@ -49,14 +49,25 @@
 .lobbyRules{margin-top:10px;padding:11px;background:#254a37;border:1px solid #67876e;border-radius:10px;line-height:1.45;font-size:12px;color:#e3efdc}
 .lobbyRules button{background:transparent;text-decoration:underline;color:#bff1d0;font-size:12px;font-weight:800;padding:2px 0}
 @media(max-width:390px){#toptools{top:calc(env(safe-area-inset-top) + 116px)}#modeText{font-size:11px}}
+#devStart,#devRematchEnd{margin-top:10px;background:#355b49;color:#e8f6e9}
+#devPanel{display:flex;gap:4px;align-items:center;flex-wrap:wrap;margin-top:6px}
+#devPanel button{pointer-events:auto}
+#devPanel button,#devCloseLog{padding:6px 8px;border-radius:6px;background:#345147;color:#e8f6e9;font-size:11px}
+#devPanel button[aria-pressed="true"]{background:#a4dcaa;color:#163723}
+#devLog{position:absolute;z-index:11;inset:0;background:#061812d9;padding:16px;place-items:center;display:grid}
+#devLog ol{margin:10px 0 0;padding-left:22px;font-size:13px;line-height:1.6}
+#game:has(#devPanel:not(.hidden)) #toptools{top:calc(env(safe-area-inset-top) + 160px)}
+#game:has(#devPanel:not(.hidden)) #message{top:calc(env(safe-area-inset-top) + 184px)}
+#modal{overflow:auto}
 </style>
 </head>
 <body>
 <div id="game">
   <canvas id="map" aria-label="ゲームマップ"></canvas>
-  <div id="topbar"><div class="toprow"><div class="brand"><div class="brandmark">♜</div><div class="brandtitle">TINY KINGDOMS<small>2 PLAYER REAL-TIME STRATEGY · v0.3</small></div></div><div class="timer"><span class="statusdot">●</span> <span id="timer">15:00</span></div></div>
+  <div id="topbar"><div class="toprow"><div class="brand"><div class="brandmark">♜</div><div class="brandtitle">TINY KINGDOMS<small>2 PLAYER REAL-TIME STRATEGY · v0.4</small></div></div><div class="timer"><span class="statusdot">●</span> <span id="timer">15:00</span></div></div>
     <div class="resourcebar"><div class="resource"><span>🪵</span><strong id="wood">170</strong></div><div class="resource"><span>⛏</span><strong id="iron">50</strong></div><div class="country" id="country">青国</div></div>
     <div id="goalStrip">🏆 敵の城を破壊して勝利 ／ 15分経過で得点判定</div>
+    <div id="devPanel" class="hidden"><b>開発</b><button id="devPause" aria-pressed="false">一時停止</button><button id="dev1" aria-pressed="true">1倍</button><button id="dev3" aria-pressed="false">3倍</button><button id="devRematch">再戦</button><button id="devOpenLog">BOTログ</button></div>
   </div>
   <div id="toptools"><div class="minimapwrap"><canvas id="minimap" width="216" height="140" aria-label="ミニマップ"></canvas></div><button id="zoomIn" class="sbutton" title="拡大">＋</button><button id="zoomOut" class="sbutton" title="縮小">−</button><button id="toBase" class="sbutton" title="本拠地に戻る">⌂</button><button id="helpBtn" class="sbutton" title="遊び方">?</button></div>
   <div id="message" role="status"></div>
@@ -68,7 +79,7 @@
   </div>
   <div id="modal"><div class="lobby" id="lobby">
     <div class="lobby-icon">🏰</div><h1>TINY KINGDOMS</h1><p class="tagline">BUILD YOUR KINGDOM. READ YOUR RIVAL.</p>
-    <div id="startChoices"><button class="primary" id="create">ルームを作成する</button><div class="divider">または</div><label for="codeInput">相手から教えてもらった6桁のコード</label><div class="joinrow"><input id="codeInput" maxlength="6" inputmode="numeric" placeholder="123456"><button id="joinButton">参加</button></div></div>
+    <div id="startChoices"><button class="primary" id="create">ルームを作成する</button><button class="primary" id="devStart">開発モード · BOT対戦</button><div class="divider">または</div><label for="codeInput">相手から教えてもらった6桁のコード</label><div class="joinrow"><input id="codeInput" maxlength="6" inputmode="numeric" placeholder="123456"><button id="joinButton">参加</button></div></div>
     <div id="waiting" class="hidden"><div style="text-align:center;color:#b0d9c0;font-size:12px">このコードを相手に伝えてください</div><div class="roomcode" id="roomcode">------</div><button class="primary" id="copyInvite">招待リンクを共有</button><button class="primary" id="copyCode" style="margin-top:8px;background:#355b49">コードをコピー</button><p class="wait">相手の参加を待っています…<br>2台とも同じURLにアクセスしてください。</p></div>
     <div class="lobbyRules">🏆 <b>敵の本拠地を破壊すると勝利！</b><br>15分経過時は残り城HP・建物数・重要地点の得点で判定。<button id="lobbyRulesBtn">建て方・得点の詳しいルールを見る</button></div>
     <p class="error" id="lobbyError"></p><p class="hint">🟢 2人がそろうと自動開始。<br>📱 公開されたURLなら、離れた場所にいる2人もSafariだけで対戦できます。<br>💡 2人目には招待リンクを送るのが簡単です。</p>
@@ -93,7 +104,8 @@
       <p class="ruleFoot">対戦中にこの画面を開いても、試合の時間は進みます。位置・資源の最終判定はサーバー側で行われます。</p>
     </div>
   </div>
-  <div id="endOverlay"><div class="endcard"><div style="font-size:44px">🏆</div><h2 id="endTitle">決着！</h2><p id="endReason">ゲーム終了</p><button class="primary" onclick="localStorage.removeItem('tkRoom');location.reload()">新しいルームを作る</button></div></div>
+  <div id="endOverlay"><div class="endcard"><div style="font-size:44px">🏆</div><h2 id="endTitle">決着！</h2><p id="endReason">ゲーム終了</p><button class="primary" onclick="localStorage.removeItem('tkRoom');location.reload()">新しいルームを作る</button><button class="primary hidden" id="devRematchEnd">BOTと再戦</button><button class="primary hidden" id="devLogEnd" style="margin-top:10px">BOTログ</button></div></div>
+  <div id="devLog" class="hidden" role="dialog" aria-modal="true" aria-label="BOTログ"><div class="rulesCard"><button id="devCloseLog" class="ruleClose">閉じる</button><h2>BOTログ</h2><ol id="devLogEntries"></ol></div></div>
 </div>
 <script>
 'use strict';
@@ -145,9 +157,18 @@ function onMessage(m){
   if(m.kind==='error'){if(m.message==='操作が速すぎます')finishBuild(actionReplies.shift(),m.message);$('lobbyError').textContent=m.message;showToast(m.message,3200);if(m.message.includes('満員')||m.message.includes('見つかり')){localStorage.removeItem('tkRoom');$('startChoices').classList.remove('hidden');$('waiting').classList.add('hidden');}return;}
   if(m.kind==='joined'){
     room=m.code;side=m.side;localStorage.setItem('tkRoom',JSON.stringify({code:m.code,token:m.token}));
+    if(m.dev){const url=new URL(location.href);url.searchParams.delete('room');history.replaceState(null,'',url);}
     setText('roomcode',m.code);$('startChoices').classList.add('hidden');$('waiting').classList.remove('hidden');
     if(m.ready){$('modal').classList.add('hidden');cam={...base[side]};}
     return;
+  }
+  if(m.kind==='devReset'){
+    state=null;tool=null;selected=null;selectedSquad=0;oldToast='';lastDetailRefresh=0;
+    actionReplies.length=0;animPositions.clear();
+    cam={...base[0]};zoom=.70;toastUntil=0;
+    document.querySelectorAll('[data-squad]').forEach(button=>button.classList.toggle('active',button.dataset.squad==='0'));
+    $('devLog').classList.add('hidden');$('rulesOverlay').classList.remove('open');
+    updateMode();updateDetails();return;
   }
   if(m.kind==='start'){
     side=m.side;cam={x:side===0?10:38,y:16};$('modal').classList.add('hidden');showToast('試合開始！建物を建てて領土を広げよう',4000);return;
@@ -165,6 +186,16 @@ function onMessage(m){
   if(m.kind==='state'){
     const wasEnd=state?.ended;
     state=m;side=m.side;
+    $('devPanel').classList.toggle('hidden',!m.dev);
+    $('devRematchEnd').classList.toggle('hidden',!m.dev);
+    $('devLogEnd').classList.toggle('hidden',!m.dev);
+    if(m.dev){
+      setText('devPause',m.dev.paused?'再開':'一時停止');
+      $('devPause').setAttribute('aria-pressed',m.dev.paused);
+      $('dev1').setAttribute('aria-pressed',m.dev.speed===1);
+      $('dev3').setAttribute('aria-pressed',m.dev.speed===3);
+      if(!$('devLog').classList.contains('hidden'))renderBotLog();
+    }
     $('modal').classList.add('hidden');$('endOverlay').classList.toggle('visible',Boolean(m.ended));
     if(m.ended&&!wasEnd){setText('endTitle',m.winner===null?'引き分け！':m.winner===side?'勝利！':'敗北…');setText('endReason',m.log?.[0]?.msg||'試合終了');}
     const left=Math.max(0,Math.ceil(m.duration-m.time));setText('timer',`${String(Math.floor(left/60)).padStart(2,'0')}:${String(left%60).padStart(2,'0')}`);
@@ -455,6 +486,25 @@ function pointerUp(e){const start=pointerStart,p=clientXY(e),single=mapPointers.
 canvas.addEventListener('pointerup',pointerUp);canvas.addEventListener('pointercancel',e=>{mapPointers.delete(e.pointerId);pointerStart=null;gesture=null;});
 canvas.addEventListener('wheel',e=>{e.preventDefault();changeZoom(zoom*(e.deltaY<0?1.12:.88),clientXY(e));},{passive:false});
 mini.addEventListener('click',e=>{const r=mini.getBoundingClientRect();cam.x=(e.clientX-r.left)/r.width*W;cam.y=(e.clientY-r.top)/r.height*H;limitCamera();});
+function devCommand(command,extra={}){if(state?.dev)send('dev',{command,...extra});}
+function renderBotLog(){
+  const entries=state?.dev?.log||[];
+  const rows=(entries.length?entries:[{msg:'まだ行動ログはありません'}]).map(entry=>{
+    const li=document.createElement('li');
+    li.textContent=entry.at===undefined?entry.msg:`${Math.floor(entry.at)}秒 · ${entry.msg.slice(4)}`;
+    return li;
+  });
+  $('devLogEntries').replaceChildren(...rows);
+}
+$('devStart').onclick=()=>{setText('lobbyError','');if(send('createDev'))localStorage.removeItem('tkRoom');};
+$('devPause').onclick=()=>devCommand('pause',{paused:!state?.dev?.paused});
+$('dev1').onclick=()=>devCommand('speed',{speed:1});
+$('dev3').onclick=()=>devCommand('speed',{speed:3});
+$('devRematch').onclick=()=>{if(state?.ended||confirm('現在の試合を終了し、新しいBOT戦を開始しますか？'))devCommand('rematch');};
+$('devRematchEnd').onclick=()=>devCommand('rematch');
+$('devOpenLog').onclick=()=>{renderBotLog();$('devLog').classList.remove('hidden');};
+$('devLogEnd').onclick=$('devOpenLog').onclick;
+$('devCloseLog').onclick=()=>$('devLog').classList.add('hidden');
 $('create').onclick=()=>{setText('lobbyError','');localStorage.removeItem('tkRoom');send('create');};
 $('joinButton').onclick=()=>{setText('lobbyError','');send('join',{code:$('codeInput').value});};
 $('codeInput').addEventListener('keydown',e=>{if(e.key==='Enter')$('joinButton').click();});

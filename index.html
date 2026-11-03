@@ -1,0 +1,347 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover,user-scalable=no">
+<meta name="theme-color" content="#112621"><title>TINY KINGDOMS — v0.2</title>
+<style>
+:root{color-scheme:dark;--bg:#10251f;--panel:#122920ed;--border:#61847766;--mint:#bff3d1;--green:#8de0a9;--gold:#f8cd87;--ink:#e8f6e9;--muted:#9cbbac;--danger:#f18d7b}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}html,body{width:100%;height:100%;margin:0;overflow:hidden;font-family:-apple-system,BlinkMacSystemFont,'Hiragino Kaku Gothic ProN','Noto Sans JP',sans-serif;background:var(--bg);color:var(--ink)}button,input{font:inherit}button{border:0;color:inherit;cursor:pointer;touch-action:manipulation}button:disabled{opacity:.4;cursor:default}
+#game{position:relative;width:100vw;height:100dvh;overflow:hidden;background:#1c4437}#map{width:100%;height:100%;display:block;touch-action:none;cursor:grab}#map:active{cursor:grabbing}
+#topbar{position:absolute;z-index:3;left:env(safe-area-inset-left);right:env(safe-area-inset-right);top:0;padding:calc(env(safe-area-inset-top) + 10px) 10px 8px;background:linear-gradient(#0e2926f5,#132f28d5 78%,transparent);pointer-events:none}
+.toprow{display:flex;align-items:center;justify-content:space-between;gap:7px}.brand{display:flex;align-items:center;gap:7px;min-width:0}.brandmark{width:26px;height:26px;border-radius:8px;background:#e5cca0;color:#203927;display:grid;place-items:center;font-size:17px;box-shadow:0 2px 0 #957650}.brandtitle{font-size:12px;font-weight:900;letter-spacing:1.6px;line-height:1.1}.brandtitle small{display:block;font-weight:500;letter-spacing:0;font-size:9px;color:#a3c7b5;margin-top:2px}.timer{padding:6px 9px;border:1px solid var(--border);border-radius:9px;background:#18352ee0;font-size:13px;font-weight:800;white-space:nowrap}.statusdot{color:#a7e8bd;font-size:11px}
+.resourcebar{display:flex;align-items:center;gap:6px;margin-top:9px}.resource{background:#112b24ee;border:1px solid #65857466;padding:7px 10px;min-width:83px;border-radius:11px;display:flex;align-items:center;gap:6px;box-shadow:0 5px 14px #08170f44}.resource strong{font-size:15px;font-variant-numeric:tabular-nums}.resource span{font-size:15px}.country{margin-left:auto;background:#22548a;border-radius:7px;padding:7px 9px;font-size:11px;font-weight:900;white-space:nowrap;box-shadow:inset 0 0 0 1px #ffffff22}.country.red{background:#913c42}
+#toptools{position:absolute;z-index:4;right:10px;top:calc(env(safe-area-inset-top) + 104px);display:flex;align-items:flex-end;flex-direction:column;gap:7px}.sbutton{min-width:39px;height:39px;background:#122a25ed;border:1px solid #76978a77;border-radius:11px;font-size:20px;box-shadow:0 4px 12px #11211744;color:#ecf6e9}.sbutton:active,.tool.active{background:#39705a}.minimapwrap{width:116px;height:80px;background:#0b271edb;border:1px solid #87aa9877;border-radius:9px;padding:4px;box-shadow:0 6px 15px #001b1777}#minimap{height:100%;width:100%;touch-action:manipulation}
+#message{position:absolute;z-index:5;left:50%;top:calc(env(safe-area-inset-top) + 106px);transform:translateX(-50%);max-width:min(320px,75%);padding:9px 13px;border:1px solid #d8b87d88;background:#233d32ed;border-radius:12px;font-weight:700;font-size:12px;text-align:center;box-shadow:0 5px 18px #152c2988;opacity:0;pointer-events:none;transition:opacity .22s}#message.show{opacity:1}
+#bottom{position:absolute;z-index:4;left:0;right:0;bottom:0;padding:0 8px calc(env(safe-area-inset-bottom) + 8px);background:linear-gradient(transparent,#0a211be3 15%,#081e19f5);max-width:760px;margin:auto}
+#modeBanner{font-size:12px;font-weight:750;background:#d5efb9;color:#264733;border-radius:9px;padding:9px 12px;margin-bottom:7px;display:none;align-items:center;justify-content:space-between;gap:9px;box-shadow:0 5px 12px #0003}#modeBanner.visible{display:flex}#cancelMode{background:#365346;color:#fff;padding:6px 10px;border-radius:7px;font-size:12px}
+#detail{display:none;border:1px solid #779b8870;border-radius:14px;background:var(--panel);padding:12px;margin-bottom:8px;box-shadow:0 9px 27px #03130b77;backdrop-filter:blur(10px)}#detail.visible{display:block}.dhead{display:flex;gap:10px;align-items:flex-start;justify-content:space-between}.dtitle{font-size:15px;font-weight:900}.dsub{font-size:11px;color:var(--muted);margin-top:4px;line-height:1.45}.dclose{background:#345147;border-radius:7px;padding:4px 8px;color:#c5e1d0}.drow{display:flex;gap:7px;margin-top:9px;align-items:stretch}.dbtn{flex:1;min-width:0;background:#285443;color:#ecfbee;border:1px solid #72a68e77;border-radius:9px;padding:8px 5px;line-height:1.2;font-size:11px;font-weight:700;text-align:center}.dbtn small{display:block;color:#b9d8c7;font-size:10px;margin-top:4px;font-weight:500}.dbtn.alt{background:#414d35;border-color:#bea56d77}.dbtn:active{filter:brightness(1.16)}
+#squads{display:flex;align-items:center;gap:6px;margin-bottom:7px}.squad{border:1px solid #54796688;background:#163a2b;color:#d7e8d9;border-radius:11px;padding:9px 10px;min-width:81px;display:flex;justify-content:space-between;gap:4px;align-items:center;font-size:12px;flex:1}.squad.active{background:#376e56;border-color:#c1f5be;box-shadow:inset 0 0 0 1px #91dcb3}.cmd{background:#274338;border:1px solid #648a7788;border-radius:10px;padding:9px 8px;font-size:12px;font-weight:700;white-space:nowrap}.cmd.danger{color:#ffd8c4}.cmd.active{background:#538464;color:white}.cmd span{display:none}
+#buildbar{border:1px solid #56766677;border-radius:14px;background:#10291fe8;padding:8px 7px 7px;box-shadow:0 6px 25px #001a1277;backdrop-filter:blur(12px)}.sectiontitle{display:flex;justify-content:space-between;align-items:center;color:#bbddc7;font-size:10px;font-weight:800;letter-spacing:.7px;margin:0 5px 7px}.sectiontitle em{font-style:normal;font-weight:400;color:#8bad99}
+#builditems{display:flex;gap:6px;overflow-x:auto;overscroll-behavior-x:contain;scrollbar-width:none}#builditems::-webkit-scrollbar{display:none}.tool{flex:1;min-width:62px;max-width:130px;background:#234036;color:#ddedda;border:1px solid #61856d99;border-radius:10px;padding:7px 3px 6px;display:flex;flex-direction:column;align-items:center;gap:3px}.tool.active{background:#447c5b;border-color:#c0ecc4}.tool .ico{font-size:23px;line-height:23px;filter:drop-shadow(0 1px 1px #0005)}.tool .name{font-size:10px;font-weight:800;white-space:nowrap}.tool .cost{font-size:9px;color:#c2ddca;white-space:nowrap}
+#modal{position:absolute;inset:0;z-index:10;display:grid;place-items:center;background:linear-gradient(155deg,#102f2bbd,#0b201bec),radial-gradient(circle at 25% 35%,#457760,#17382b);padding:22px}#modal.hidden{display:none}.lobby{max-width:390px;width:100%;border:1px solid #8cc3a17f;background:#112d24f2;border-radius:22px;padding:25px 20px 18px;box-shadow:0 17px 70px #020e0b99}.lobby-icon{font-size:43px;text-align:center;filter:drop-shadow(0 6px 9px #0006)}.lobby h1{font-size:25px;margin:8px 0 3px;text-align:center;letter-spacing:2px}.tagline{font-size:12px;color:#b5d3c3;text-align:center;margin:0 0 22px}.primary{width:100%;padding:13px;border-radius:11px;background:#a4dcaa;color:#163723;font-weight:900;font-size:14px;box-shadow:0 4px 0 #4b8c61;transition:transform .1s}.primary:active{transform:translateY(2px);box-shadow:0 2px 0 #4b8c61}.divider{display:flex;align-items:center;gap:9px;font-size:10px;margin:18px 0;color:#83a996}.divider:before,.divider:after{content:'';height:1px;flex:1;background:#62877477}label{font-size:11px;color:#b4d8c5}.joinrow{display:flex;gap:7px;margin-top:7px}#codeInput{min-width:0;flex:1;border:1px solid #7ca78c77;border-radius:10px;background:#071c16;color:#e8f6e9;text-align:center;letter-spacing:5px;font-size:19px;font-weight:900;outline:none;padding:10px}#joinButton{border:1px solid #71a68b91;border-radius:10px;padding:0 15px;background:#27543e;font-weight:800;font-size:13px}.hint{margin-top:18px;color:#95b7a6;font-size:11px;line-height:1.7}.roomcode{font-size:44px;letter-spacing:8px;font-weight:900;text-align:center;color:#d7f7c9;margin:10px 0 15px}.wait{font-size:12px;color:#d2e8d4;text-align:center;line-height:1.7}.error{color:#ffc19e;font-size:12px;text-align:center;margin-top:12px;min-height:18px}.hidden{display:none!important}
+#endOverlay{position:absolute;z-index:8;inset:0;background:#071b15d4;display:none;place-items:center;text-align:center;padding:25px}#endOverlay.visible{display:grid}.endcard{border:1px solid #e8ce9e6e;background:#153b2ceb;border-radius:18px;padding:24px;max-width:340px;width:100%}.endcard h2{font-size:28px;margin:6px 0;color:#eaeabe}.endcard p{font-size:13px;color:#b4d1bf}
+@media(max-width:390px){.tool{min-width:60px}.tool .name{font-size:9px}.resource{min-width:75px;padding:6px 7px}.resource strong{font-size:14px}.squad{padding:9px 6px;min-width:66px}.cmd{padding:9px 6px}#toptools{top:calc(env(safe-area-inset-top) + 99px)}}
+@media(min-width:600px){#bottom{bottom:12px;border-radius:14px}#topbar{padding-left:25px;padding-right:25px}.tool{max-width:none}}
+</style>
+</head>
+<body>
+<div id="game">
+  <canvas id="map" aria-label="ゲームマップ"></canvas>
+  <div id="topbar"><div class="toprow"><div class="brand"><div class="brandmark">♜</div><div class="brandtitle">TINY KINGDOMS<small>2 PLAYER REAL-TIME STRATEGY · v0.1</small></div></div><div class="timer"><span class="statusdot">●</span> <span id="timer">15:00</span></div></div>
+    <div class="resourcebar"><div class="resource"><span>🪵</span><strong id="wood">170</strong></div><div class="resource"><span>⛏</span><strong id="iron">50</strong></div><div class="country" id="country">青国</div></div>
+  </div>
+  <div id="toptools"><div class="minimapwrap"><canvas id="minimap" width="216" height="140" aria-label="ミニマップ"></canvas></div><button id="zoomIn" class="sbutton" title="拡大">＋</button><button id="zoomOut" class="sbutton" title="縮小">−</button><button id="toBase" class="sbutton" title="本拠地に戻る">⌂</button><button id="helpBtn" class="sbutton" title="遊び方">?</button></div>
+  <div id="message" role="status"></div>
+  <div id="bottom">
+    <div id="modeBanner"><span id="modeText">建設地点をタップ</span><button id="cancelMode">キャンセル ✕</button></div>
+    <div id="detail"></div>
+    <div id="squads"><button class="squad active" data-squad="0">⚔ 第1部隊 <b id="squad0">1/8</b></button><button class="squad" data-squad="1">⚑ 第2部隊 <b id="squad1">1/8</b></button><button class="cmd" id="march">進軍</button><button class="cmd" id="defend">防衛</button><button class="cmd danger" id="retreat">撤退</button></div>
+    <div id="buildbar"><div class="sectiontitle">BUILD / 建設 <em>施設を選択 → 領土内をタップ</em></div><div id="builditems"></div></div>
+  </div>
+  <div id="modal"><div class="lobby" id="lobby">
+    <div class="lobby-icon">🏰</div><h1>TINY KINGDOMS</h1><p class="tagline">BUILD YOUR KINGDOM. READ YOUR RIVAL.</p>
+    <div id="startChoices"><button class="primary" id="create">ルームを作成する</button><div class="divider">または</div><label for="codeInput">相手から教えてもらった6桁のコード</label><div class="joinrow"><input id="codeInput" maxlength="6" inputmode="numeric" placeholder="123456"><button id="joinButton">参加</button></div></div>
+    <div id="waiting" class="hidden"><div style="text-align:center;color:#b0d9c0;font-size:12px">このコードを相手に伝えてください</div><div class="roomcode" id="roomcode">------</div><button class="primary" id="copyInvite">招待リンクを共有</button><button class="primary" id="copyCode" style="margin-top:8px;background:#355b49">コードをコピー</button><p class="wait">相手の参加を待っています…<br>2台とも同じURLにアクセスしてください。</p></div>
+    <p class="error" id="lobbyError"></p><p class="hint">🟢 2人がそろうと自動開始。<br>📱 公開されたURLなら、離れた場所にいる2人もSafariだけで対戦できます。<br>💡 2人目には招待リンクを送るのが簡単です。</p>
+  </div></div>
+  <div id="endOverlay"><div class="endcard"><div style="font-size:44px">🏆</div><h2 id="endTitle">決着！</h2><p id="endReason">ゲーム終了</p><button class="primary" onclick="localStorage.removeItem('tkRoom');location.reload()">新しいルームを作る</button></div></div>
+</div>
+<script>
+'use strict';
+const canvas=document.getElementById('map'),ctx=canvas.getContext('2d'),mini=document.getElementById('minimap'),mc=mini.getContext('2d'),fogCanvas=document.createElement('canvas'),fogCtx=fogCanvas.getContext('2d');
+const $=id=>document.getElementById(id);
+const W=48,H=32,CELL=30,base=[{x:5.5,y:16},{x:42.5,y:16}];
+const names={castle:'本拠地',lumber:'製材所',mine:'採掘所',barracks:'兵舎',outpost:'前哨基地',tower:'見張り塔'};
+const icons={castle:'♜',lumber:'🪵',mine:'⛏',barracks:'⚔',outpost:'⚑',tower:'☗'};
+const branches={lumber:{fast:'高速製材所',efficient:'高効率製材所'},mine:{machine:'機械採掘所',armored:'防護採掘所'},barracks:{mass:'徴兵兵舎',elite:'精鋭兵舎'},outpost:{pioneer:'開拓基地',fort:'要塞基地'},tower:{damage:'射撃塔',vision:'監視塔'}};
+const troopIcon={shield:'◆',archer:'▲',scout:'✦'},typeName={shield:'盾兵',archer:'弓兵',scout:'斥候兵'};
+const OBJ=[{x:24,y:7,symbol:'⛏',name:'中央鉱山'},{x:24,y:16,symbol:'✧',name:'古代遺跡'},{x:24,y:25,symbol:'♣',name:'中央森林'}];
+let state=null,side=0,room=null,ws=null,selected=null,selectedSquad=0,tool=null,zoom=.70;
+let cam={x:10,y:16},dpr=1,cw=0,ch=0,lastFrame=performance.now(),mapPointers=new Map(),pointerStart=null,gesture=null,animPositions=new Map(),oldToast='',toastUntil=0,connected=false,lastDetailRefresh=0;
+function setText(id,text){$(id).textContent=text;}
+function showToast(msg,ms=2600){if(!msg)return;setText('message',msg);$('message').classList.add('show');toastUntil=Date.now()+ms;}
+function send(kind,extra={}){if(ws&&ws.readyState===WebSocket.OPEN)ws.send(JSON.stringify({kind,...extra}));else showToast('サーバーに接続していません');}
+function action(data){send('action',{action:data});}
+function connect(){const scheme=location.protocol==='https:'?'wss':'ws';ws=new WebSocket(`${scheme}://${location.host}/ws`);
+  ws.onopen=()=>{connected=true;document.querySelector('.statusdot').style.color='#b8f2c6';
+    let saved=null;try{saved=JSON.parse(localStorage.getItem('tkRoom')||'null');}catch{localStorage.removeItem('tkRoom');}
+    const invited=new URLSearchParams(location.search).get('room');
+    const invite=/^\d{6}$/.test(invited||'')?invited:null;
+    if(invite&&invite!==saved?.code){localStorage.removeItem('tkRoom');send('join',{code:invite});}
+    else if(saved?.code&&saved?.token)send('join',saved);
+    else if(invite)send('join',{code:invite});
+  };
+  ws.onmessage=e=>{let msg;try{msg=JSON.parse(e.data)}catch{return;}onMessage(msg);};
+  ws.onclose=()=>{connected=false;document.querySelector('.statusdot').style.color='#f6ab87';if(state&&!state.ended)showToast('通信が切れました。再接続しています…',3000);setTimeout(connect,1800);};
+  ws.onerror=()=>{};
+}
+function onMessage(m){
+  if(m.kind==='peer'){if(!m.connected)showToast('相手の接続が切れました。試合を一時停止しています',4500);else showToast('相手が戻りました。試合再開！',2200);return;}
+  if(m.kind==='error'){$('lobbyError').textContent=m.message;showToast(m.message,3200);if(m.message.includes('満員')||m.message.includes('見つかり')){localStorage.removeItem('tkRoom');$('startChoices').classList.remove('hidden');$('waiting').classList.add('hidden');}return;}
+  if(m.kind==='joined'){
+    room=m.code;side=m.side;localStorage.setItem('tkRoom',JSON.stringify({code:m.code,token:m.token}));
+    setText('roomcode',m.code);$('startChoices').classList.add('hidden');$('waiting').classList.remove('hidden');
+    if(m.ready){$('modal').classList.add('hidden');cam={...base[side]};}
+    return;
+  }
+  if(m.kind==='start'){
+    side=m.side;cam={x:side===0?10:38,y:16};$('modal').classList.add('hidden');showToast('試合開始！建物を建てて領土を広げよう',4000);return;
+  }
+  if(m.kind==='result'){if(m.error)showToast(m.error);else if(m.ok&&['建設','強化','予約','指示'].some(s=>m.ok.includes(s)))showToast(m.ok,1600);return;}
+  if(m.kind==='state'){
+    const wasEnd=state?.ended;
+    state=m;side=m.side;
+    $('modal').classList.add('hidden');$('endOverlay').classList.toggle('visible',Boolean(m.ended));
+    if(m.ended&&!wasEnd){setText('endTitle',m.winner===null?'引き分け！':m.winner===side?'勝利！':'敗北…');setText('endReason',m.log?.[0]?.msg||'試合終了');}
+    const left=Math.max(0,Math.ceil(m.duration-m.time));setText('timer',`${String(Math.floor(left/60)).padStart(2,'0')}:${String(left%60).padStart(2,'0')}`);
+    setText('wood',m.wood);setText('iron',m.iron);setText('country',side===0?'🔵 青国':'🔴 赤国');$('country').classList.toggle('red',side===1);
+    for(let i=0;i<2;i++)setText('squad'+i,`${m.units.filter(u=>u.side===side&&u.squad===i).length}/8`);
+    if(selected?.kind==='building'&&!m.buildings.some(b=>b.id===selected.id))selected=null;
+    if(m.log?.[0]&&m.log[0].msg!==oldToast){oldToast=m.log[0].msg;if(m.time>1)showToast(oldToast,2200);}
+    if(performance.now()-lastDetailRefresh>850){updateDetails();lastDetailRefresh=performance.now();}
+  }
+}
+function resize(){dpr=Math.min(window.devicePixelRatio||1,2);const r=canvas.getBoundingClientRect();cw=r.width;ch=r.height;canvas.width=Math.round(cw*dpr);canvas.height=Math.round(ch*dpr);fogCanvas.width=canvas.width;fogCanvas.height=canvas.height;}
+window.addEventListener('resize',resize);resize();
+function scale(){return CELL*zoom;}
+function sx(x){return cw/2+(x-cam.x)*scale();}function sy(y){return ch/2+(y-cam.y)*scale();}
+function worldAt(x,y){return {x:(x-cw/2)/scale()+cam.x,y:(y-ch/2)/scale()+cam.y};}
+function limitCamera(){const visibleX=cw/(2*scale()),visibleY=ch/(2*scale());cam.x=Math.max(-visibleX/2,Math.min(W+visibleX/2,cam.x));cam.y=Math.max(-visibleY/2,Math.min(H+visibleY/2,cam.y));}
+function changeZoom(n,anchor={x:cw/2,y:ch/2}){const old=worldAt(anchor.x,anchor.y);zoom=Math.max(.35,Math.min(1.6,n));const nw=worldAt(anchor.x,anchor.y);cam.x+=old.x-nw.x;cam.y+=old.y-nw.y;limitCamera();}
+function hash(x,y){let n=x*374761393+y*668265263;n=(n^(n>>13))*1274126177;return ((n^(n>>>16))>>>0)/4294967295;}
+function poly(points,fill,stroke,width=.05){ctx.beginPath();ctx.moveTo(points[0][0],points[0][1]);for(const p of points.slice(1))ctx.lineTo(p[0],p[1]);ctx.closePath();if(fill){ctx.fillStyle=fill;ctx.fill();}if(stroke){ctx.lineWidth=width;ctx.strokeStyle=stroke;ctx.stroke();}}
+function circle(x,y,r,fill,stroke,width=.045){ctx.beginPath();ctx.arc(x,y,r,0,Math.PI*2);if(fill){ctx.fillStyle=fill;ctx.fill();}if(stroke){ctx.lineWidth=width;ctx.strokeStyle=stroke;ctx.stroke();}}
+function label(text,x,y,size=.4,color='#fff',shadow=true){ctx.save();ctx.font=`800 ${size}px sans-serif`;ctx.textAlign='center';ctx.textBaseline='middle';if(shadow){ctx.shadowColor='#001a13';ctx.shadowBlur=.12;}ctx.fillStyle=color;ctx.fillText(text,x,y);ctx.restore();}
+function drawTerrain(){ctx.fillStyle='#7eac79';ctx.fillRect(0,0,W,H);
+  const minX=Math.max(0,Math.floor(cam.x-cw/(2*scale())-2)),maxX=Math.min(W,Math.ceil(cam.x+cw/(2*scale())+2));
+  const minY=Math.max(0,Math.floor(cam.y-ch/(2*scale())-2)),maxY=Math.min(H,Math.ceil(cam.y+ch/(2*scale())+2));
+  for(let y=minY;y<maxY;y++)for(let x=minX;x<maxX;x++){
+    const r=hash(x,y),h=hash(y+56,x+99);
+    ctx.fillStyle=r>.72?'#88b47e':r>.38?'#80ae78':'#79a672';ctx.fillRect(x,y,1,1);
+    if(h>.58){ctx.fillStyle='#527e56aa';ctx.fillRect(x+.18,y+.3,.06,.2);ctx.fillRect(x+.62,y+.7,.05,.16);}
+  }
+  ctx.fillStyle='#355d49';ctx.fillRect(0,0,W,.3);ctx.fillRect(0,H-.3,W,.3);ctx.fillRect(0,0,.3,H);ctx.fillRect(W-.3,0,.3,H);
+  // Three open crossing corridors (the central lane is the fastest).
+  for(const y of [7,16,25]){ctx.beginPath();ctx.moveTo(4,y);ctx.bezierCurveTo(17,y+1.4,32,y-1.4,44,y);ctx.strokeStyle='#ccb98355';ctx.lineWidth=.42;ctx.stroke();}
+  if(!state)return;
+  for(const rock of state.rocks){circle(rock.x+.08,rock.y+.17,rock.r,'#405b58');poly([[rock.x-rock.r,rock.y+.3],[rock.x-.55,rock.y-.6],[rock.x+.03,rock.y-.72],[rock.x+rock.r,rock.y+.31]],'#70847b','#425955');poly([[rock.x-.35,rock.y-.18],[rock.x+.03,rock.y-.72],[rock.x+.34,rock.y+.19]],'#9aa89a');}
+  for(const site of state.sites){
+    if(site.type==='forest'&&!site.spent){
+      const count=Math.max(1,Math.ceil(site.stock/site.max*7));
+      circle(site.x,site.y,1.7,'#42845733');
+      for(let i=0;i<count;i++){const a=i*2.4;const x=site.x+Math.cos(a)*.99,y=site.y+Math.sin(a)*.8;
+        circle(x+.13,y+.16,.41,'#345e43');circle(x,y,.39,'#407d4d');circle(x-.1,y-.12,.29,'#66aa66');circle(x+.13,y-.14,.16,'#78b770');
+      }
+    }else if(site.type==='forest'){circle(site.x,site.y,1.4,'#9b987044');for(let i=0;i<5;i++){const a=i*2.2,x=site.x+Math.cos(a),y=site.y+Math.sin(a);circle(x,y,.16,'#95795c');}}
+    if(site.type==='ore'&&!site.spent){for(let i=0;i<5;i++){const a=i*2.3,x=site.x+Math.cos(a)*.75,y=site.y+Math.sin(a)*.55;
+      poly([[x-.47,y+.22],[x-.3,y-.33],[x+.19,y-.42],[x+.47,y+.19]],'#647b78','#475d61');poly([[x-.3,y-.33],[x+.19,y-.42],[x,y-.03]],'#b0bdb1');
+    }}else if(site.type==='ore'){circle(site.x,site.y,.8,'#4b686355');}
+  }
+}
+function drawVisionFog(){
+  if(!state)return;
+  // Paint a standalone screen-space mask. Destination-out subtracts the UNION of
+  // overlapping sight circles (even-odd holes would incorrectly darken overlaps).
+  fogCtx.setTransform(1,0,0,1,0,0);
+  fogCtx.clearRect(0,0,fogCanvas.width,fogCanvas.height);
+  fogCtx.fillStyle='#0a261ba8';fogCtx.fillRect(0,0,fogCanvas.width,fogCanvas.height);
+  fogCtx.globalCompositeOperation='destination-out';
+  for(const v of state.sources){fogCtx.beginPath();fogCtx.arc(sx(v.x)*dpr,sy(v.y)*dpr,v.r*scale()*dpr,0,Math.PI*2);fogCtx.fill();}
+  fogCtx.globalCompositeOperation='source-over';
+  ctx.save();ctx.setTransform(1,0,0,1,0,0);ctx.drawImage(fogCanvas,0,0);ctx.restore();
+}
+function territory(){if(!state)return;
+  for(const b of state.buildings.filter(b=>['castle','outpost'].includes(b.type)&&b.buildLeft<=0)){
+    const r=b.type==='castle'?6.3:b.upgrade==='pioneer'?6.5:5;
+    ctx.save();ctx.beginPath();ctx.arc(b.x,b.y,r,0,Math.PI*2);ctx.fillStyle=b.side===0?'#519de51e':'#e36c581b';ctx.fill();ctx.setLineDash([.32,.24]);ctx.lineWidth=.07;ctx.strokeStyle=b.side===0?'#6cbbec99':'#f4a48b99';ctx.stroke();ctx.restore();
+  }
+}
+function objectiveDraw(t){if(!state)return;
+  for(let i=0;i<OBJ.length;i++){
+    const o=OBJ[i],capture=state.objectives[i],owner=capture.owner;
+    circle(o.x,o.y,1.22,owner===0?'#3a6fa2a9':owner===1?'#99423faa':'#e0c48a88','#f4e1ad',.085);
+    circle(o.x,o.y,.92,'#233c32bb','#e5c887',.065);
+    label(o.symbol,o.x,o.y-.04,.90,'#ffedb1');
+    if(capture.progress>0){ctx.save();ctx.beginPath();ctx.arc(o.x,o.y,1.4,-Math.PI/2,-Math.PI/2+Math.PI*2*capture.progress/8);ctx.lineWidth=.17;ctx.strokeStyle=capture.attacker===0?'#b5e2ff':'#ffc0ad';ctx.stroke();ctx.restore();}
+    label(['鉱山','遺跡','森林'][i],o.x,o.y+1.78,.39,'#fff9dd');
+  }
+}
+function drawBar(x,y,w,v,color){ctx.fillStyle='#14251a';ctx.fillRect(x-w/2,y,w,.14);ctx.fillStyle=color;ctx.fillRect(x-w/2,y,w*Math.max(0,Math.min(1,v)),.14);}
+function buildingDraw(b){const own=b.side===side,basecolor=b.side===0?'#3685c8':'#c45750',roof=b.side===0?'#3e8ee0':'#dd695f';
+  const ghost=b.ghost||false;
+  ctx.save();ctx.globalAlpha=ghost?.37:1;
+  if(selected?.id===b.id){circle(b.x,b.y,1.02,null,'#f7eab3',.13);}
+  circle(b.x+.1,b.y+.33,.82,'#153d2c66');
+  const x=b.x,y=b.y;
+  if(b.type==='castle'){
+    ctx.fillStyle='#d7cba3';ctx.fillRect(x-.72,y-.42,1.44,1.06);ctx.fillStyle=roof;poly([[x-.82,y-.42],[x,y-1.14],[x+.82,y-.42]],roof);
+    ctx.fillStyle='#efdca8';for(const dx of [-.68,.58]){ctx.fillRect(x+dx-.1,y-.67,.24,.53);ctx.fillStyle=roof;poly([[x+dx-.18,y-.67],[x+dx+.02,y-.95],[x+dx+.22,y-.67]],roof);ctx.fillStyle='#efdca8';}
+    ctx.fillStyle='#4a5a5e';ctx.fillRect(x-.18,y+.24,.36,.40);
+  }else if(b.type==='outpost'){
+    ctx.fillStyle='#b6aa87';ctx.fillRect(x-.58,y-.3,1.16,.85);ctx.fillStyle=roof;poly([[x-.68,y-.3],[x,y-.88],[x+.68,y-.3]],roof);ctx.strokeStyle='#f2e2bb';ctx.lineWidth=.09;ctx.beginPath();ctx.moveTo(x+.65,y-.6);ctx.lineTo(x+.65,y-1.18);ctx.stroke();poly([[x+.65,y-1.14],[x+1.14,y-1],[x+.65,y-.83]],basecolor);
+  }else if(b.type==='tower'){
+    ctx.fillStyle='#b9b6a7';ctx.fillRect(x-.43,y-.64,.86,1.23);ctx.fillStyle='#d6d1b8';for(let k=-1;k<=1;k++)ctx.fillRect(x+k*.32-.12,y-.8,.25,.22);
+    ctx.fillStyle=roof;poly([[x-.59,y-.8],[x,y-1.16],[x+.59,y-.8]],roof);ctx.fillStyle='#344b48';ctx.fillRect(x-.11,y-.37,.23,.31);
+  }else{
+    ctx.fillStyle=b.type==='mine'?'#b5ae98':'#d7be90';ctx.fillRect(x-.64,y-.32,1.28,.92);poly([[x-.76,y-.32],[x,y-.85],[x+.76,y-.32]],b.type==='mine'?'#6a7771':roof);
+    ctx.fillStyle='#614c3c';ctx.fillRect(x-.18,y+.13,.35,.47);
+    if(b.type==='barracks'){ctx.fillStyle=basecolor;ctx.fillRect(x-.35,y-.15,.7,.13);}
+  }
+  if(b.buildLeft>0){ctx.globalAlpha=.5;circle(x,y,.95,'#cfe2b343');ctx.globalAlpha=1;label('🔨',x,y-.95,.55);label(Math.ceil(b.buildLeft)+'s',x,y+1.1,.44,'#fff0b6');}
+  if(b.upgradeLeft>0){label('⬆',x+.7,y-.85,.46,'#ffe79b');}
+  if(b.lv===2){circle(x+.59,y-.63,.28,'#edc86e');label('Ⅱ',x+.59,y-.63,.3,'#263b29',false);}
+  if(!b.linked&&own&&b.type!=='castle'){label('!',x+.65,y-.6,.46,'#ffb09c');}
+  if(b.hp!==null&&b.hp<b.maxHp){drawBar(x,y+.82,1.24,b.hp/b.maxHp,b.side===0?'#5ec4ef':'#f58f7f');}
+  ctx.restore();
+}
+function unitDraw(u,dt){
+  let p=animPositions.get(u.id);if(!p){p={x:u.x,y:u.y};animPositions.set(u.id,p);}
+  const f=Math.min(1,dt*13);p.x+=(u.x-p.x)*f;p.y+=(u.y-p.y)*f;
+  const x=p.x,y=p.y,own=u.side===side,color=u.side===0?'#317dd2':'#d45b53',off=(performance.now()/300+Number.parseInt(u.id,36))%6;
+  if(own&&u.squad===selectedSquad){circle(x,y,.43,'#fff3a32e','#e7edb070',.06);}
+  circle(x+.07,y+.21,.31,'#163d2f99');
+  if(u.type==='shield'){circle(x,y,.32,color,'#f7e8bc',.09);poly([[x,y-.31],[x+.28,y-.11],[x+.16,y+.20],[x,y+.3],[x-.18,y+.19],[x-.27,y-.1]],'#dbe6e3','#32444e',.04);}
+  if(u.type==='archer'){circle(x,y,.29,color,'#fff2cf',.07);ctx.strokeStyle='#f5d9a3';ctx.lineWidth=.09;ctx.beginPath();ctx.arc(x+.1,y,0.34,-1.3,1.4);ctx.stroke();}
+  if(u.type==='scout'){circle(x,y,.26,color,'#fff1ba',.07);poly([[x,y-.3],[x+.33,y+.24],[x-.33,y+.24]],'#e8d5a2','#4b594c',.06);}
+  if(u.elite)circle(x,y-.34,.08,'#ffecac');
+  if(u.hp<u.maxHp)drawBar(x,y-.51,.68,u.hp/u.maxHp,own?'#92e0be':'#f5a397');
+}
+function drawOrders(){if(!state)return;for(let i=0;i<2;i++){
+  const order=state.orders[i],troops=state.units.filter(u=>u.side===side&&u.squad===i);
+  if(!order||!troops.length)continue;
+  if(order.mode==='defend'&&Math.hypot(order.x-base[side].x,order.y-base[side].y)<.3)continue;
+  const c=order.mode==='retreat'?'#f6cc9e':i===0?'#d9ed91':'#bfe1ff';
+  circle(order.x,order.y,.62,'#f4f4ce17',c,.06);label(i===0?'1':'2',order.x,order.y,.4,c);
+  ctx.save();ctx.beginPath();ctx.moveTo(troops[0].x,troops[0].y);ctx.lineTo(order.x,order.y);ctx.strokeStyle=c+'99';ctx.lineWidth=.05;ctx.setLineDash([.28,.22]);ctx.stroke();ctx.restore();
+}}
+function drawPreview(){if(!tool||!tool.at)return;
+  const p=tool.at;circle(p.x,p.y,.82,'#b1fb9966','#d6f7bf',.1);
+  if(tool.kind==='build'&&tool.type==='outpost'){ctx.save();ctx.setLineDash([.25,.18]);circle(p.x,p.y,5,'#73dfaa1a','#b6eccc',.065);ctx.restore();}
+  label(tool.kind==='build'?'＋':'◎',p.x,p.y,.65,'#ffffff');
+}
+function render(t){const dt=Math.min(.05,(t-lastFrame)/1000);lastFrame=t;
+  ctx.setTransform(dpr,0,0,dpr,0,0);ctx.clearRect(0,0,cw,ch);ctx.fillStyle='#204935';ctx.fillRect(0,0,cw,ch);
+  ctx.save();ctx.translate(cw/2,ch/2);ctx.scale(scale(),scale());ctx.translate(-cam.x,-cam.y);
+  drawTerrain();drawVisionFog();territory();objectiveDraw(t);
+  if(state){for(const b of state.buildings)buildingDraw(b);drawOrders();for(const u of state.units)unitDraw(u,dt);drawPreview();}
+  ctx.restore();drawMini();
+  if(Date.now()>toastUntil)$('message').classList.remove('show');
+  requestAnimationFrame(render);
+}
+function drawMini(){mc.fillStyle='#315640';mc.fillRect(0,0,216,140);if(!state)return;
+  mc.save();mc.scale(216/W,140/H);
+  for(const rock of state.rocks){mc.fillStyle='#67706b';mc.fillRect(rock.x-.5,rock.y-.5,1,1);}
+  for(const s of state.sites)if(!s.spent){mc.fillStyle=s.type==='forest'?'#8fbc79':'#a0a8a8';mc.fillRect(s.x-.4,s.y-.4,.8,.8);}
+  for(let i=0;i<3;i++){mc.fillStyle=state.objectives[i].owner===0?'#4ba7f4':state.objectives[i].owner===1?'#f06b6b':'#e8c986';mc.fillRect(OBJ[i].x-.65,OBJ[i].y-.65,1.3,1.3);}
+  for(const b of state.buildings){mc.fillStyle=b.side===0?'#56b0ff':'#fa7466';mc.fillRect(b.x-.55,b.y-.55,1.1,1.1);}
+  for(const u of state.units){mc.fillStyle=u.side===0?'#b2ebff':'#ffc4b3';mc.fillRect(u.x-.27,u.y-.27,.54,.54);}
+  const vW=cw/scale(),vH=ch/scale();mc.lineWidth=.22;mc.strokeStyle='#ffffff';mc.strokeRect(cam.x-vW/2,cam.y-vH/2,vW,vH);
+  mc.restore();
+}
+function useTool(kind,type){selected=null;updateDetails();tool={kind,type,at:null};updateMode();}
+function updateMode(){
+  $('modeBanner').classList.toggle('visible',Boolean(tool));
+  if(tool){setText('modeText',tool.kind==='build'?`${names[tool.type]}：緑の領土内をタップして建設`:`第${selectedSquad+1}部隊：${tool.type==='march'?'進軍':'防衛'}地点をタップ`);}
+  for(const el of document.querySelectorAll('.tool'))el.classList.toggle('active',tool?.kind==='build'&&el.dataset.type===tool.type);
+  for(const id of ['march','defend'])$(id).classList.toggle('active',tool?.kind==='order'&&tool.type===id);
+}
+function cancelTool(){tool=null;updateMode();}
+function worldTap(pos){if(!state||state.ended)return;
+  const x=Math.max(0,Math.min(W,pos.x)),y=Math.max(0,Math.min(H,pos.y));
+  if(tool){
+    if(tool.kind==='build')action({kind:'build',type:tool.type,x:Math.round(x*10)/10,y:Math.round(y*10)/10});
+    else action({kind:'order',squad:selectedSquad,mode:tool.type,x:Math.round(x*10)/10,y:Math.round(y*10)/10});
+    cancelTool();return;
+  }
+  const build=state.buildings.filter(b=>Math.hypot(b.x-x,b.y-y)<1.05).sort((a,b)=>Math.hypot(a.x-x,a.y-y)-Math.hypot(b.x-x,b.y-y))[0];
+  if(build){selected={kind:'building',id:build.id};updateDetails();return;}
+  const site=state.sites.find(s=>Math.hypot(s.x-x,s.y-y)<1.4);
+  const obj=OBJ.find(o=>Math.hypot(o.x-x,o.y-y)<1.25);
+  if(site){selected={kind:'site',id:site.id};updateDetails();return;}
+  if(obj){selected={kind:'objective',id:OBJ.indexOf(obj)};updateDetails();return;}
+  selected=null;updateDetails();
+}
+function detailButton(text,sub,fn,extra=''){const b=document.createElement('button');b.className='dbtn '+extra;b.innerHTML=`${text}<small>${sub}</small>`;b.onclick=fn;return b;}
+function updateDetails(){const box=$('detail');box.innerHTML='';if(!state||!selected){box.classList.remove('visible');return;}
+  let name,desc,controls=[];
+  if(selected.kind==='building'){
+    const b=state.buildings.find(v=>v.id===selected.id);if(!b){selected=null;box.classList.remove('visible');return;}
+    name=(b.upgrade?branches[b.type]?.[b.upgrade]:null)||names[b.type];
+    const own=b.side===side;
+    desc=`${own?'自国':'敵国'} · ${b.ghost?'最終確認情報':b.buildLeft>0?`建設中 残り${Math.ceil(b.buildLeft)}秒`:b.upgradeLeft>0?`強化中 残り${Math.ceil(b.upgradeLeft)}秒`:'Lv'+b.lv}`;
+    if(b.hp!==null)desc+=` · HP ${b.hp}/${Math.round(b.maxHp)}`;
+    if(own&&!b.linked&&b.type!=='castle')desc+=' · ⚠ 補給線切断';
+    if(own&&b.buildLeft<=0&&b.lv===1&&b.upgradeLeft<=0&&state.upgradeRules[b.type]){
+      controls=state.upgradeRules[b.type].map(c=>detailButton(c.name,`🪵${c.wood} ⛏${c.iron}｜${c.description}`,()=>action({kind:'upgrade',id:b.id,branch:c.id})));
+    }
+    if(own&&b.type==='barracks'&&b.buildLeft<=0){
+      const heading=document.createElement('div');heading.className='dsub';heading.style.marginTop='10px';heading.textContent=`生産キュー ${b.queue.length}体 / 12（第${selectedSquad+1}部隊へ補充）`;box.appendChild(heading);
+      for(const c of Object.entries(state.troopRules)){const [type,r]=c;
+        controls.push(detailButton(r.name,`🪵${r.wood} ⛏${r.iron} · ${r.time}秒`,()=>action({kind:'recruit',id:b.id,type,squad:selectedSquad})));
+      }
+    }
+  }else if(selected.kind==='site'){
+    const s=state.sites.find(v=>v.id===selected.id);if(!s){selected=null;return;}
+    name=s.type==='forest'?'森林資源':'鉄鉱脈';desc=`残量 ${s.stock}/${s.max} · ${s.spent?'枯渇済み':'近くに採集施設を設置して採取'}`;
+  }else{
+    const i=selected.id,o=OBJ[i],c=state.objectives[i];name=o.name;
+    desc=(c.owner===null?'中立':c.owner===side?'自国が制圧中':'敵国が制圧中')+` · 部隊を8秒滞在させると占領。${['鉄生産+0.7/秒','兵士生産時間-20%','木材生産+1.2/秒'][i]}`;
+  }
+  const head=document.createElement('div');head.className='dhead';const info=document.createElement('div');const title=document.createElement('div');title.className='dtitle';title.textContent=name;
+  const sub=document.createElement('div');sub.className='dsub';sub.textContent=desc;info.append(title,sub);const close=document.createElement('button');close.className='dclose';close.textContent='✕';close.onclick=()=>{selected=null;updateDetails();};head.append(info,close);box.prepend(head);
+  if(controls.length){const row=document.createElement('div');row.className='drow';controls.forEach(c=>row.appendChild(c));box.appendChild(row);}
+  box.classList.add('visible');
+}
+function initBuild(){const bar=$('builditems');for(const [type,ico] of Object.entries(icons)){
+  if(type==='castle')continue;
+  const b=document.createElement('button');b.className='tool';b.dataset.type=type;
+  const r={lumber:['40','0'],mine:['55','0'],barracks:['70','20'],outpost:['60','15'],tower:['50','25']}[type];
+  b.innerHTML=`<span class="ico">${ico}</span><span class="name">${names[type]}</span><span class="cost">🪵${r[0]} ⛏${r[1]}</span>`;
+  b.onclick=()=>tool?.kind==='build'&&tool.type===type?cancelTool():useTool('build',type);bar.appendChild(b);
+}}
+function clientXY(e){const r=canvas.getBoundingClientRect();return {x:e.clientX-r.left,y:e.clientY-r.top};}
+canvas.addEventListener('pointerdown',e=>{
+  canvas.setPointerCapture(e.pointerId);const p=clientXY(e);mapPointers.set(e.pointerId,p);
+  if(mapPointers.size===1){pointerStart={p,cam:{...cam},at:Date.now()};gesture=null;}
+  if(mapPointers.size===2){const pts=[...mapPointers.values()];gesture={distance:Math.hypot(pts[0].x-pts[1].x,pts[0].y-pts[1].y),zoom,mid:{x:(pts[0].x+pts[1].x)/2,y:(pts[0].y+pts[1].y)/2}};pointerStart=null;}
+});
+canvas.addEventListener('pointermove',e=>{if(!mapPointers.has(e.pointerId))return;
+  const p=clientXY(e);mapPointers.set(e.pointerId,p);
+  if(mapPointers.size===2&&gesture){const pts=[...mapPointers.values()];const d=Math.hypot(pts[0].x-pts[1].x,pts[0].y-pts[1].y);changeZoom(gesture.zoom*d/Math.max(1,gesture.distance),{x:(pts[0].x+pts[1].x)/2,y:(pts[0].y+pts[1].y)/2});}
+  else if(mapPointers.size===1&&pointerStart){cam.x=pointerStart.cam.x-(p.x-pointerStart.p.x)/scale();cam.y=pointerStart.cam.y-(p.y-pointerStart.p.y)/scale();limitCamera();}
+  if(tool)tool.at=worldAt(p.x,p.y);
+});
+function pointerUp(e){const start=pointerStart,p=clientXY(e),single=mapPointers.size===1;
+  mapPointers.delete(e.pointerId);
+  if(single&&start&&Math.hypot(start.p.x-p.x,start.p.y-p.y)<9&&Date.now()-start.at<700)worldTap(worldAt(p.x,p.y));
+  if(mapPointers.size<2)gesture=null;
+  if(!mapPointers.size)pointerStart=null;
+}
+canvas.addEventListener('pointerup',pointerUp);canvas.addEventListener('pointercancel',e=>{mapPointers.delete(e.pointerId);pointerStart=null;gesture=null;});
+canvas.addEventListener('wheel',e=>{e.preventDefault();changeZoom(zoom*(e.deltaY<0?1.12:.88),clientXY(e));},{passive:false});
+mini.addEventListener('click',e=>{const r=mini.getBoundingClientRect();cam.x=(e.clientX-r.left)/r.width*W;cam.y=(e.clientY-r.top)/r.height*H;limitCamera();});
+$('create').onclick=()=>{setText('lobbyError','');localStorage.removeItem('tkRoom');send('create');};
+$('joinButton').onclick=()=>{setText('lobbyError','');send('join',{code:$('codeInput').value});};
+$('codeInput').addEventListener('keydown',e=>{if(e.key==='Enter')$('joinButton').click();});
+$('copyCode').onclick=async()=>{try{await navigator.clipboard.writeText(room);showToast('ルームコードをコピーしました');}catch{showToast('コード：'+room);}};
+$('copyInvite').onclick=async()=>{
+  if(!room)return;
+  const url=new URL(location.pathname,location.origin);url.searchParams.set('room',room);
+  try{
+    if(navigator.share){await navigator.share({title:'TINY KINGDOMS — 2人対戦',text:'このリンクから対戦に参加して！',url:url.toString()});return;}
+    await navigator.clipboard.writeText(url.toString());showToast('招待リンクをコピーしました');
+  }catch(e){if(e?.name!=='AbortError'){try{await navigator.clipboard.writeText(url.toString());showToast('招待リンクをコピーしました');}catch{showToast('ルームコード：'+room);}}}
+};
+$('zoomIn').onclick=()=>changeZoom(zoom*1.24);$('zoomOut').onclick=()=>changeZoom(zoom/1.24);$('toBase').onclick=()=>{cam={...base[side]};changeZoom(.70);};
+$('helpBtn').onclick=()=>showToast('建物を選択→配置。兵舎で兵士を予約。部隊を選び進軍先をタップ。拠点破壊で勝利！',5500);
+$('cancelMode').onclick=cancelTool;
+for(const button of document.querySelectorAll('[data-squad]'))button.onclick=()=>{
+  selectedSquad=Number(button.dataset.squad);document.querySelectorAll('[data-squad]').forEach(e=>e.classList.toggle('active',Number(e.dataset.squad)===selectedSquad));updateDetails();
+};
+$('march').onclick=()=>useTool('order','march');$('defend').onclick=()=>useTool('order','defend');
+$('retreat').onclick=()=>{cancelTool();action({kind:'order',squad:selectedSquad,mode:'retreat'});};
+const invitedCode=new URLSearchParams(location.search).get('room');
+if(/^\d{6}$/.test(invitedCode||'')){$('codeInput').value=invitedCode;setText('lobbyError','招待されたルームへ接続します…');}
+initBuild();connect();requestAnimationFrame(render);
+</script>
+</body></html>

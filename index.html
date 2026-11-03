@@ -2,7 +2,7 @@
 <html lang="ja">
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover,user-scalable=no">
-<meta name="theme-color" content="#112621"><title>TINY KINGDOMS — v0.2</title>
+<meta name="theme-color" content="#112621"><title>TINY KINGDOMS — v0.3</title>
 <style>
 :root{color-scheme:dark;--bg:#10251f;--panel:#122920ed;--border:#61847766;--mint:#bff3d1;--green:#8de0a9;--gold:#f8cd87;--ink:#e8f6e9;--muted:#9cbbac;--danger:#f18d7b}
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}html,body{width:100%;height:100%;margin:0;overflow:hidden;font-family:-apple-system,BlinkMacSystemFont,'Hiragino Kaku Gothic ProN','Noto Sans JP',sans-serif;background:var(--bg);color:var(--ink)}button,input{font:inherit}button{border:0;color:inherit;cursor:pointer;touch-action:manipulation}button:disabled{opacity:.4;cursor:default}
@@ -22,18 +22,46 @@
 #endOverlay{position:absolute;z-index:8;inset:0;background:#071b15d4;display:none;place-items:center;text-align:center;padding:25px}#endOverlay.visible{display:grid}.endcard{border:1px solid #e8ce9e6e;background:#153b2ceb;border-radius:18px;padding:24px;max-width:340px;width:100%}.endcard h2{font-size:28px;margin:6px 0;color:#eaeabe}.endcard p{font-size:13px;color:#b4d1bf}
 @media(max-width:390px){.tool{min-width:60px}.tool .name{font-size:9px}.resource{min-width:75px;padding:6px 7px}.resource strong{font-size:14px}.squad{padding:9px 6px;min-width:66px}.cmd{padding:9px 6px}#toptools{top:calc(env(safe-area-inset-top) + 99px)}}
 @media(min-width:600px){#bottom{bottom:12px;border-radius:14px}#topbar{padding-left:25px;padding-right:25px}.tool{max-width:none}}
+
+/* v0.3: clear victory / building-placement guidance */
+#goalStrip{margin-top:5px;font-size:10px;font-weight:700;color:#daf4c7;letter-spacing:.05px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#toptools{top:calc(env(safe-area-inset-top) + 119px)}
+#message{top:calc(env(safe-area-inset-top) + 144px)}
+#modeBanner{background:#e0efce;align-items:center;flex-wrap:wrap;padding:9px 10px;gap:7px}
+#modeBanner .modeCaption{flex:1 1 130px;min-width:0;line-height:1.32}
+#modeText{display:block;font-weight:850;font-size:12px}
+#placementStatus{display:block;font-size:10px;color:#456350;font-weight:700;margin-top:3px;line-height:1.4}
+#placementStatus.invalid{color:#9b3932}
+#confirmBuild{display:none;padding:9px 10px;border-radius:7px;background:#20734b;color:white;font-size:12px;font-weight:900;white-space:nowrap}
+#confirmBuild.visible{display:block}#confirmBuild:disabled{background:#8caaa0;color:#edf4e9;opacity:.72}
+#cancelMode{padding:9px 8px}
+.tool.unaffordable .cost{color:#ffae9d}.tool.unaffordable{border-color:#bb7b7477}
+#rulesOverlay{position:absolute;inset:0;z-index:12;display:none;place-items:center;background:#061812e0;padding:calc(env(safe-area-inset-top) + 12px) 16px calc(env(safe-area-inset-bottom) + 12px)}
+#rulesOverlay.open{display:grid}
+.rulesCard{position:relative;width:min(440px,100%);max-height:100%;overflow-y:auto;background:#17372b;border:1px solid #9cb6a080;border-radius:18px;padding:18px;box-shadow:0 16px 55px #0007;overscroll-behavior:contain}
+.rulesCard h2{font-size:20px;margin:0 0 8px}.rulesCard h3{font-size:13px;color:#cce9b6;margin:14px 0 5px}
+.rulesCard p{margin:4px 0 7px;line-height:1.6;font-size:12px;color:#d3e7d9}
+.rulesCard .ruleRow{display:flex;gap:6px;align-items:flex-start;font-size:12px;padding:6px 0;border-bottom:1px solid #83a58a26}
+.rulesCard .ruleKey{width:77px;flex:none;color:#b8ddb8;font-weight:800}
+.rulesCard .ruleValue{flex:1;color:#e2f3e5;line-height:1.5}
+.rulesCard .ruleClose{position:sticky;top:0;float:right;padding:6px 11px;border-radius:8px;background:#355947;color:white;font-weight:700}
+.rulesCard .ruleFoot{font-size:11px;color:#a4c3ae;margin-top:12px}
+.lobbyRules{margin-top:10px;padding:11px;background:#254a37;border:1px solid #67876e;border-radius:10px;line-height:1.45;font-size:12px;color:#e3efdc}
+.lobbyRules button{background:transparent;text-decoration:underline;color:#bff1d0;font-size:12px;font-weight:800;padding:2px 0}
+@media(max-width:390px){#toptools{top:calc(env(safe-area-inset-top) + 116px)}#modeText{font-size:11px}}
 </style>
 </head>
 <body>
 <div id="game">
   <canvas id="map" aria-label="ゲームマップ"></canvas>
-  <div id="topbar"><div class="toprow"><div class="brand"><div class="brandmark">♜</div><div class="brandtitle">TINY KINGDOMS<small>2 PLAYER REAL-TIME STRATEGY · v0.1</small></div></div><div class="timer"><span class="statusdot">●</span> <span id="timer">15:00</span></div></div>
+  <div id="topbar"><div class="toprow"><div class="brand"><div class="brandmark">♜</div><div class="brandtitle">TINY KINGDOMS<small>2 PLAYER REAL-TIME STRATEGY · v0.3</small></div></div><div class="timer"><span class="statusdot">●</span> <span id="timer">15:00</span></div></div>
     <div class="resourcebar"><div class="resource"><span>🪵</span><strong id="wood">170</strong></div><div class="resource"><span>⛏</span><strong id="iron">50</strong></div><div class="country" id="country">青国</div></div>
+    <div id="goalStrip">🏆 敵の城を破壊して勝利 ／ 15分経過で得点判定</div>
   </div>
   <div id="toptools"><div class="minimapwrap"><canvas id="minimap" width="216" height="140" aria-label="ミニマップ"></canvas></div><button id="zoomIn" class="sbutton" title="拡大">＋</button><button id="zoomOut" class="sbutton" title="縮小">−</button><button id="toBase" class="sbutton" title="本拠地に戻る">⌂</button><button id="helpBtn" class="sbutton" title="遊び方">?</button></div>
   <div id="message" role="status"></div>
   <div id="bottom">
-    <div id="modeBanner"><span id="modeText">建設地点をタップ</span><button id="cancelMode">キャンセル ✕</button></div>
+    <div id="modeBanner"><div class="modeCaption"><span id="modeText">建設位置をタップ</span><span id="placementStatus">位置を選ぶと建築可能か確認できます</span></div><button id="confirmBuild">ここに建てる ✓</button><button id="cancelMode">やめる ✕</button></div>
     <div id="detail"></div>
     <div id="squads"><button class="squad active" data-squad="0">⚔ 第1部隊 <b id="squad0">1/8</b></button><button class="squad" data-squad="1">⚑ 第2部隊 <b id="squad1">1/8</b></button><button class="cmd" id="march">進軍</button><button class="cmd" id="defend">防衛</button><button class="cmd danger" id="retreat">撤退</button></div>
     <div id="buildbar"><div class="sectiontitle">BUILD / 建設 <em>施設を選択 → 領土内をタップ</em></div><div id="builditems"></div></div>
@@ -42,8 +70,29 @@
     <div class="lobby-icon">🏰</div><h1>TINY KINGDOMS</h1><p class="tagline">BUILD YOUR KINGDOM. READ YOUR RIVAL.</p>
     <div id="startChoices"><button class="primary" id="create">ルームを作成する</button><div class="divider">または</div><label for="codeInput">相手から教えてもらった6桁のコード</label><div class="joinrow"><input id="codeInput" maxlength="6" inputmode="numeric" placeholder="123456"><button id="joinButton">参加</button></div></div>
     <div id="waiting" class="hidden"><div style="text-align:center;color:#b0d9c0;font-size:12px">このコードを相手に伝えてください</div><div class="roomcode" id="roomcode">------</div><button class="primary" id="copyInvite">招待リンクを共有</button><button class="primary" id="copyCode" style="margin-top:8px;background:#355b49">コードをコピー</button><p class="wait">相手の参加を待っています…<br>2台とも同じURLにアクセスしてください。</p></div>
+    <div class="lobbyRules">🏆 <b>敵の本拠地を破壊すると勝利！</b><br>15分経過時は残り城HP・建物数・重要地点の得点で判定。<button id="lobbyRulesBtn">建て方・得点の詳しいルールを見る</button></div>
     <p class="error" id="lobbyError"></p><p class="hint">🟢 2人がそろうと自動開始。<br>📱 公開されたURLなら、離れた場所にいる2人もSafariだけで対戦できます。<br>💡 2人目には招待リンクを送るのが簡単です。</p>
   </div></div>
+  <div id="rulesOverlay" role="dialog" aria-modal="true" aria-label="遊び方と建設ルール">
+    <div class="rulesCard"><button class="ruleClose" id="closeRules">閉じる ✕</button>
+      <h2>🏰 遊び方・建設ルール</h2>
+      <h3>🏆 勝利条件</h3>
+      <p><b>敵の本拠地（城）のHPを0にすると即勝利。</b> 15分経過時は合計得点が高い国の勝利。同点は引き分け。</p>
+      <div class="ruleRow"><span class="ruleKey">城の残りHP</span><span class="ruleValue">1HP＝1点（最大900点）</span></div>
+      <div class="ruleRow"><span class="ruleKey">重要地点</span><span class="ruleValue">中央の3か所を占領：1か所200点</span></div>
+      <div class="ruleRow"><span class="ruleKey">自国の建物</span><span class="ruleValue">城や建設中の施設も含め、残存する1棟につき24点</span></div>
+      <h3>🔨 建設できる場所</h3>
+      <div class="ruleRow"><span class="ruleKey">① 緑の範囲</span><span class="ruleValue">自国の城・城とつながった完成済みの前哨基地の領土内。建設モード中に範囲が強調される。</span></div>
+      <div class="ruleRow"><span class="ruleKey">② 空き地</span><span class="ruleValue">岩山・資源地点・建物に重ならず、敵領土・敵部隊付近を避ける。</span></div>
+      <div class="ruleRow"><span class="ruleKey">③ 資源と距離</span><span class="ruleValue">製材所は未使用の森の近く、採掘所は未使用の鉱脈の近く（どちらも距離5.4以内）。森や鉱脈の上には置かない。</span></div>
+      <div class="ruleRow"><span class="ruleKey">④ 資源</span><span class="ruleValue">画面上の木材と鉄が建設費以上必要。前哨基地は最大3棟。</span></div>
+      <h3>📱 建設操作</h3>
+      <p><b>① 下の建物を選ぶ → ② マップの空き地をタップ → ③ 緑の「ここに建てる」を押す。</b> 赤い表示なら位置を変えてね。建てられなかった場合、建設モードは継続する。</p>
+      <h3>⚔ 戦争の操作</h3>
+      <p>兵舎を建設し、タップして兵士を予約。部隊を選択して「進軍」→目的地をタップ。兵士は近くの敵と自動戦闘する。中央の地点は敵部隊がいない状態で部隊を約8秒滞在させると占領可能。</p>
+      <p class="ruleFoot">対戦中にこの画面を開いても、試合の時間は進みます。位置・資源の最終判定はサーバー側で行われます。</p>
+    </div>
+  </div>
   <div id="endOverlay"><div class="endcard"><div style="font-size:44px">🏆</div><h2 id="endTitle">決着！</h2><p id="endReason">ゲーム終了</p><button class="primary" onclick="localStorage.removeItem('tkRoom');location.reload()">新しいルームを作る</button></div></div>
 </div>
 <script>
@@ -60,8 +109,24 @@ let state=null,side=0,room=null,ws=null,selected=null,selectedSquad=0,tool=null,
 let cam={x:10,y:16},dpr=1,cw=0,ch=0,lastFrame=performance.now(),mapPointers=new Map(),pointerStart=null,gesture=null,animPositions=new Map(),oldToast='',toastUntil=0,connected=false,lastDetailRefresh=0;
 function setText(id,text){$(id).textContent=text;}
 function showToast(msg,ms=2600){if(!msg)return;setText('message',msg);$('message').classList.add('show');toastUntil=Date.now()+ms;}
-function send(kind,extra={}){if(ws&&ws.readyState===WebSocket.OPEN)ws.send(JSON.stringify({kind,...extra}));else showToast('サーバーに接続していません');}
-function action(data){send('action',{action:data});}
+const actionReplies=[];
+function send(kind,extra={}){
+  if(ws?.readyState===WebSocket.OPEN){ws.send(JSON.stringify({kind,...extra}));return true;}
+  showToast('サーバーに接続していません');
+  return false;
+}
+function action(data){
+  if(!send('action',{action:data}))return false;
+  actionReplies.push(data.kind==='build'?tool:null);
+  return true;
+}
+function finishBuild(placement,error){
+  if(!placement||tool!==placement)return;
+  placement.pending=false;
+  if(!error){cancelTool();return;}
+  placement.serverError=error;
+  updateMode();
+}
 function connect(){const scheme=location.protocol==='https:'?'wss':'ws';ws=new WebSocket(`${scheme}://${location.host}/ws`);
   ws.onopen=()=>{connected=true;document.querySelector('.statusdot').style.color='#b8f2c6';
     let saved=null;try{saved=JSON.parse(localStorage.getItem('tkRoom')||'null');}catch{localStorage.removeItem('tkRoom');}
@@ -72,12 +137,12 @@ function connect(){const scheme=location.protocol==='https:'?'wss':'ws';ws=new W
     else if(invite)send('join',{code:invite});
   };
   ws.onmessage=e=>{let msg;try{msg=JSON.parse(e.data)}catch{return;}onMessage(msg);};
-  ws.onclose=()=>{connected=false;document.querySelector('.statusdot').style.color='#f6ab87';if(state&&!state.ended)showToast('通信が切れました。再接続しています…',3000);setTimeout(connect,1800);};
+  ws.onclose=()=>{actionReplies.length=0;if(tool?.pending)finishBuild(tool,'通信が切れました。再接続後に位置を選び直してください');connected=false;document.querySelector('.statusdot').style.color='#f6ab87';if(state&&!state.ended)showToast('通信が切れました。再接続しています…',3000);setTimeout(connect,1800);};
   ws.onerror=()=>{};
 }
 function onMessage(m){
   if(m.kind==='peer'){if(!m.connected)showToast('相手の接続が切れました。試合を一時停止しています',4500);else showToast('相手が戻りました。試合再開！',2200);return;}
-  if(m.kind==='error'){$('lobbyError').textContent=m.message;showToast(m.message,3200);if(m.message.includes('満員')||m.message.includes('見つかり')){localStorage.removeItem('tkRoom');$('startChoices').classList.remove('hidden');$('waiting').classList.add('hidden');}return;}
+  if(m.kind==='error'){if(m.message==='操作が速すぎます')finishBuild(actionReplies.shift(),m.message);$('lobbyError').textContent=m.message;showToast(m.message,3200);if(m.message.includes('満員')||m.message.includes('見つかり')){localStorage.removeItem('tkRoom');$('startChoices').classList.remove('hidden');$('waiting').classList.add('hidden');}return;}
   if(m.kind==='joined'){
     room=m.code;side=m.side;localStorage.setItem('tkRoom',JSON.stringify({code:m.code,token:m.token}));
     setText('roomcode',m.code);$('startChoices').classList.add('hidden');$('waiting').classList.remove('hidden');
@@ -87,7 +152,16 @@ function onMessage(m){
   if(m.kind==='start'){
     side=m.side;cam={x:side===0?10:38,y:16};$('modal').classList.add('hidden');showToast('試合開始！建物を建てて領土を広げよう',4000);return;
   }
-  if(m.kind==='result'){if(m.error)showToast(m.error);else if(m.ok&&['建設','強化','予約','指示'].some(s=>m.ok.includes(s)))showToast(m.ok,1600);return;}
+  if(m.kind==='result'){
+    const placement=actionReplies.shift();
+    const error=placement&&['敵の領土には建設できません','敵部隊が近くにいます','地形または他の建物と重なっています','未使用の資源地の近くに配置してください'].includes(m.error)
+      ?'サーバー判定で建設できません。別の位置を選んでください'
+      :m.error;
+    if(error)showToast('操作できません：'+error,3200);
+    else if(m.ok&&['建設','強化','予約','指示'].some(word=>m.ok.includes(word)))showToast(m.ok,1600);
+    finishBuild(placement,error);
+    return;
+  }
   if(m.kind==='state'){
     const wasEnd=state?.ended;
     state=m;side=m.side;
@@ -98,6 +172,8 @@ function onMessage(m){
     for(let i=0;i<2;i++)setText('squad'+i,`${m.units.filter(u=>u.side===side&&u.squad===i).length}/8`);
     if(selected?.kind==='building'&&!m.buildings.some(b=>b.id===selected.id))selected=null;
     if(m.log?.[0]&&m.log[0].msg!==oldToast){oldToast=m.log[0].msg;if(m.time>1)showToast(oldToast,2200);}
+    updateBuildAvailability();
+    if(tool?.kind==='build')updateMode();
     if(performance.now()-lastDetailRefresh>850){updateDetails();lastDetailRefresh=performance.now();}
   }
 }
@@ -151,6 +227,11 @@ function drawVisionFog(){
   ctx.save();ctx.setTransform(1,0,0,1,0,0);ctx.drawImage(fogCanvas,0,0);ctx.restore();
 }
 function territory(){if(!state)return;
+  // Placement mode makes the currently buildable friendly territory unmistakable.
+  if(tool?.kind==='build')for(const b of state.buildings.filter(b=>b.side===side&&b.linked&&['castle','outpost'].includes(b.type)&&b.buildLeft<=0)){
+    const radius=b.type==='castle'?6.3:b.upgrade==='pioneer'?6.5:5;
+    circle(b.x,b.y,radius-.3,'#80f0a12b','#a7f1bc',.105);
+  }
   for(const b of state.buildings.filter(b=>['castle','outpost'].includes(b.type)&&b.buildLeft<=0)){
     const r=b.type==='castle'?6.3:b.upgrade==='pioneer'?6.5:5;
     ctx.save();ctx.beginPath();ctx.arc(b.x,b.y,r,0,Math.PI*2);ctx.fillStyle=b.side===0?'#519de51e':'#e36c581b';ctx.fill();ctx.setLineDash([.32,.24]);ctx.lineWidth=.07;ctx.strokeStyle=b.side===0?'#6cbbec99':'#f4a48b99';ctx.stroke();ctx.restore();
@@ -215,9 +296,17 @@ function drawOrders(){if(!state)return;for(let i=0;i<2;i++){
   ctx.save();ctx.beginPath();ctx.moveTo(troops[0].x,troops[0].y);ctx.lineTo(order.x,order.y);ctx.strokeStyle=c+'99';ctx.lineWidth=.05;ctx.setLineDash([.28,.22]);ctx.stroke();ctx.restore();
 }}
 function drawPreview(){if(!tool||!tool.at)return;
-  const p=tool.at;circle(p.x,p.y,.82,'#b1fb9966','#d6f7bf',.1);
-  if(tool.kind==='build'&&tool.type==='outpost'){ctx.save();ctx.setLineDash([.25,.18]);circle(p.x,p.y,5,'#73dfaa1a','#b6eccc',.065);ctx.restore();}
-  label(tool.kind==='build'?'＋':'◎',p.x,p.y,.65,'#ffffff');
+  const p=tool.at,check=tool.kind==='build'?(tool.serverError||checkPlacement(tool.type,p)):null;
+  const ok=!check,green=ok?'#b6fbbb':'#ff9b8b';
+  circle(p.x,p.y,.93,ok?'#64ed8b55':'#fc776755',green,.14);
+  if(tool.kind==='build'){
+    if(['lumber','mine'].includes(tool.type)){
+      ctx.save();ctx.setLineDash([.2,.16]);circle(p.x,p.y,5.4,null,green,.045);ctx.restore();
+    }
+    if(tool.type==='outpost'){ctx.save();ctx.setLineDash([.25,.18]);circle(p.x,p.y,5,ok?'#73dfaa12':'#e57d7212',green,.065);ctx.restore();}
+  }
+  label(tool.kind==='build'?(ok?'✓':'×'):'◎',p.x,p.y,.68,green);
+  if(tool.kind==='build')label(ok?'建設OK':'建設不可',p.x,p.y-1.18,.36,green);
 }
 function render(t){const dt=Math.min(.05,(t-lastFrame)/1000);lastFrame=t;
   ctx.setTransform(dpr,0,0,dpr,0,0);ctx.clearRect(0,0,cw,ch);ctx.fillStyle='#204935';ctx.fillRect(0,0,cw,ch);
@@ -238,20 +327,66 @@ function drawMini(){mc.fillStyle='#315640';mc.fillRect(0,0,216,140);if(!state)re
   const vW=cw/scale(),vH=ch/scale();mc.lineWidth=.22;mc.strokeStyle='#ffffff';mc.strokeRect(cam.x-vW/2,cam.y-vH/2,vW,vH);
   mc.restore();
 }
-function useTool(kind,type){selected=null;updateDetails();tool={kind,type,at:null};updateMode();}
+// Screen-side guidance only: the server remains authoritative, including hidden enemy positions.
+function checkPlacement(type,p){
+  if(!state||!state.buildingRules?.[type])return '試合がまだ始まっていません';
+  const {x,y}=p,cost=state.buildingRules[type];
+  if(!(Number.isFinite(x)&&Number.isFinite(y)&&x>1&&x<W-1&&y>1&&y<H-1))return 'マップの内側を選んでください';
+  const territoryBuildings=state.buildings.filter(b=>b.side===side&&b.linked&&b.buildLeft<=0&&(b.type==='castle'||b.type==='outpost'));
+  const radius=b=>b.type==='castle'?6.3:b.upgrade==='pioneer'?6.5:5;
+  if(!territoryBuildings.some(b=>Math.hypot(b.x-x,b.y-y)<=radius(b)-.3))return '緑の自国領土の外です。前哨基地で拡張できます';
+  if(state.buildings.some(b=>b.side!==side&&!b.ghost&&b.hp>0&&['castle','outpost'].includes(b.type)&&b.buildLeft<=0&&Math.hypot(b.x-x,b.y-y)<radius(b)))return '敵の領土には建てられません';
+  if(state.rocks.some(r=>Math.hypot(r.x-x,r.y-y)<r.r+.7))return '岩山に重なっています';
+  if(state.buildings.some(b=>!b.ghost&&b.hp>0&&Math.hypot(b.x-x,b.y-y)<1.58))return '建物と重なっています';
+  if(state.sites.some(s=>!s.spent&&Math.hypot(s.x-x,s.y-y)<1.3))return '資源そのものの上には置けません。少し離してください';
+  if(state.units.some(u=>u.side!==side&&Math.hypot(u.x-x,u.y-y)<2.7))return '敵部隊が近くにいます';
+  if(type==='outpost'&&state.buildings.filter(b=>b.side===side&&b.type==='outpost').length>=3)return '前哨基地は最大3棟です';
+  if(type==='lumber'||type==='mine'){
+    const sType=type==='lumber'?'forest':'ore';
+    const sites=state.sites.filter(s=>s.type===sType&&!s.spent&&s.stock>0&&!state.buildings.some(b=>b.site===s.id));
+    if(!sites.some(s=>Math.hypot(s.x-x,s.y-y)<=5.4))return type==='lumber'?'未使用の森林から5.4以内に置いてください':'未使用の鉱脈から5.4以内に置いてください';
+  }
+  if(state.wood<cost.wood||state.iron<cost.iron)return `資源不足：木材${cost.wood}・鉄${cost.iron}が必要`;
+  return null;
+}
+function updateBuildAvailability(){
+  if(!state)return;
+  for(const el of document.querySelectorAll('#builditems .tool')){
+    const r=state.buildingRules?.[el.dataset.type];
+    el.classList.toggle('unaffordable',!!r&&(state.wood<r.wood||state.iron<r.iron));
+  }
+}
+function useTool(kind,type){if(tool?.pending)return;selected=null;updateDetails();tool={kind,type,at:null,serverError:null};updateMode();}
 function updateMode(){
   $('modeBanner').classList.toggle('visible',Boolean(tool));
-  if(tool){setText('modeText',tool.kind==='build'?`${names[tool.type]}：緑の領土内をタップして建設`:`第${selectedSquad+1}部隊：${tool.type==='march'?'進軍':'防衛'}地点をタップ`);}
+  $('cancelMode').disabled=Boolean(tool?.pending);
+  $('confirmBuild').classList.remove('visible');
+  $('placementStatus').classList.remove('invalid');
+  if(tool?.kind==='build'){
+    const rules=state?.buildingRules?.[tool.type],cost=rules?`🪵${rules.wood} ⛏${rules.iron}`:'';
+    setText('modeText',`${names[tool.type]} ${cost}：建設場所を選択`);
+    let txt='緑の領土内の空き地をタップ → 確認して建設';
+    if(['lumber','mine'].includes(tool.type))txt+=tool.type==='lumber'?'（森林の近く）':'（鉱脈の近く）';
+    if(tool.at){const reason=checkPlacement(tool.type,tool.at);txt=tool.pending?'サーバーに建設を確認中…':tool.serverError?`⚠ ${tool.serverError}`:reason?`✕ ${reason}`:'✓ 建設可能（目安）。「ここに建てる」で確定';
+      $('placementStatus').classList.toggle('invalid',!!reason||!!tool.serverError);
+      $('confirmBuild').classList.add('visible');$('confirmBuild').disabled=!!reason||!!tool.serverError||!!tool.pending;
+    }
+    setText('placementStatus',txt);
+  } else if(tool?.kind==='order'){
+    setText('modeText',`第${selectedSquad+1}部隊：${tool.type==='march'?'進軍':'防衛'}地点をタップ`);
+    setText('placementStatus','マップをタップすると指示します');
+  }
   for(const el of document.querySelectorAll('.tool'))el.classList.toggle('active',tool?.kind==='build'&&el.dataset.type===tool.type);
   for(const id of ['march','defend'])$(id).classList.toggle('active',tool?.kind==='order'&&tool.type===id);
 }
-function cancelTool(){tool=null;updateMode();}
+function cancelTool(){if(tool?.pending)return;tool=null;updateMode();}
 function worldTap(pos){if(!state||state.ended)return;
   const x=Math.max(0,Math.min(W,pos.x)),y=Math.max(0,Math.min(H,pos.y));
   if(tool){
-    if(tool.kind==='build')action({kind:'build',type:tool.type,x:Math.round(x*10)/10,y:Math.round(y*10)/10});
-    else action({kind:'order',squad:selectedSquad,mode:tool.type,x:Math.round(x*10)/10,y:Math.round(y*10)/10});
-    cancelTool();return;
+    if(tool.kind==='build'){
+      if(tool.pending)return;tool.at={x:Math.round(x*10)/10,y:Math.round(y*10)/10};tool.serverError=null;updateMode();
+    }else{action({kind:'order',squad:selectedSquad,mode:tool.type,x:Math.round(x*10)/10,y:Math.round(y*10)/10});cancelTool();}
+    return;
   }
   const build=state.buildings.filter(b=>Math.hypot(b.x-x,b.y-y)<1.05).sort((a,b)=>Math.hypot(a.x-x,a.y-y)-Math.hypot(b.x-x,b.y-y))[0];
   if(build){selected={kind:'building',id:build.id};updateDetails();return;}
@@ -309,7 +444,7 @@ canvas.addEventListener('pointermove',e=>{if(!mapPointers.has(e.pointerId))retur
   const p=clientXY(e);mapPointers.set(e.pointerId,p);
   if(mapPointers.size===2&&gesture){const pts=[...mapPointers.values()];const d=Math.hypot(pts[0].x-pts[1].x,pts[0].y-pts[1].y);changeZoom(gesture.zoom*d/Math.max(1,gesture.distance),{x:(pts[0].x+pts[1].x)/2,y:(pts[0].y+pts[1].y)/2});}
   else if(mapPointers.size===1&&pointerStart){cam.x=pointerStart.cam.x-(p.x-pointerStart.p.x)/scale();cam.y=pointerStart.cam.y-(p.y-pointerStart.p.y)/scale();limitCamera();}
-  if(tool)tool.at=worldAt(p.x,p.y);
+  if(tool?.kind==='order')tool.at=worldAt(p.x,p.y);
 });
 function pointerUp(e){const start=pointerStart,p=clientXY(e),single=mapPointers.size===1;
   mapPointers.delete(e.pointerId);
@@ -333,7 +468,19 @@ $('copyInvite').onclick=async()=>{
   }catch(e){if(e?.name!=='AbortError'){try{await navigator.clipboard.writeText(url.toString());showToast('招待リンクをコピーしました');}catch{showToast('ルームコード：'+room);}}}
 };
 $('zoomIn').onclick=()=>changeZoom(zoom*1.24);$('zoomOut').onclick=()=>changeZoom(zoom/1.24);$('toBase').onclick=()=>{cam={...base[side]};changeZoom(.70);};
-$('helpBtn').onclick=()=>showToast('建物を選択→配置。兵舎で兵士を予約。部隊を選び進軍先をタップ。拠点破壊で勝利！',5500);
+function showRules(){$('rulesOverlay').classList.add('open');}
+$('helpBtn').onclick=showRules;
+$('lobbyRulesBtn').onclick=showRules;
+$('closeRules').onclick=()=>$('rulesOverlay').classList.remove('open');
+$('rulesOverlay').addEventListener('click',e=>{if(e.target===$('rulesOverlay'))$('rulesOverlay').classList.remove('open');});
+$('confirmBuild').onclick=()=>{
+  if(!tool||tool.kind!=='build'||!tool.at||tool.pending)return;
+  const reason=checkPlacement(tool.type,tool.at);
+  if(reason){showToast(reason,2900);updateMode();return;}
+  if(action({kind:'build',type:tool.type,x:tool.at.x,y:tool.at.y})){
+    tool.pending=true;updateMode();
+  }
+};
 $('cancelMode').onclick=cancelTool;
 for(const button of document.querySelectorAll('[data-squad]'))button.onclick=()=>{
   selectedSquad=Number(button.dataset.squad);document.querySelectorAll('[data-squad]').forEach(e=>e.classList.toggle('active',Number(e.dataset.squad)===selectedSquad));updateDetails();
